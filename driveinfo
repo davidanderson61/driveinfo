@@ -1,0 +1,932 @@
+#!/bin/bash
+#
+# driveinfo - Gets detailed information about a drive.
+#
+# Copyright (c) 2018 David M. Anderson
+#
+# Distributed under the terms of the GNU General Public
+# License (GPL) version 3 (GPLv3) or (at your option) any later version.
+#
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+if [[ $0 != ${BASH_SOURCE[0]} ]]; then
+    case 1 in
+    1) bash "${BASH_SOURCE[0]}" "$@";;
+    2) bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")" "$@";;
+    3) bash -c ". \"$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")\"" "nuts" "$@";;
+    esac
+    return
+fi
+set -u
+
+Application() { echo "driveinfo"; }
+Version() { echo "1.0.0"; }
+ExitOK() { exit "0"; }
+ExitFatal() { exit "${1:-1}"; }
+Name() {
+    case 2 in
+    1) echo "${BASH_SOURCE[0]##*/}";;
+    2) echo "$(basename "$0")";;
+    esac
+}
+
+Validate() {
+    local "options=${DRIVEINFO_OPTIONS:-}"
+    options="${options#"${options%%[![:space:]]*}"}" # Remove leading whitespace
+    [[ ${options:0:2} == "-i" ]] && return "0"
+    [[ $# -gt 0 && ${1:0:2} == "-i" ]] && return "0"
+    local "filename" "original" "size" "current" "CRC32"
+    local -i "top"
+    while true; do
+        filename="${BASH_SOURCE[1]}"
+        original="$(tail -c 9 "$filename" 2>/dev/null)" || break
+        size="$(stat -Lqf "%z" "$filename")" || break
+        let "top = size - 9"
+        set -o pipefail
+        case 2 in
+        1)  # crc32 always produces 8 hex digits and uses same algorithm as cksum -o 3
+            current="$(head -c "$top" "$filename" 2>/dev/null | crc32 "/dev/stdin" 2>/dev/null)" || break;;
+        2)  CRC32="$(head -c "$top" "$filename" 2>/dev/null | cksum -o 3 2>/dev/null)" || break
+            printf -v "current" "%08x" "${CRC32%% *}" 2>/dev/null || break;;
+        3)  CRC32="$(head -c "$top" "$filename" 2>/dev/null | cksum 2>/dev/null)" || break
+            printf -v "current" "%08x" "${CRC32%% *}" 2>/dev/null || break;;
+        esac
+        set +o pipefail
+        [[ $original == $current ]] && return "0";
+        echo "$(Name): $filename: A validation CRC32 value of $current means the file has been modified." >&2
+        ExitFatal
+    done
+    set +o pipefail
+    echo "$(Name): $filename: The file failed to validate." >&2
+    ExitFatal
+}
+
+Validate "$@"
+
+SourcePath() { # Use parameter -a for absolute path.
+    local "current=${BASH_SOURCE[0]}" "next"
+    while [[ -h $current ]]; do
+        next="$(readlink "$current")"
+        [[ $next != /* ]] && next="$(dirname "$current")/$next"
+        current="$next"
+        #echo "trying $current" >&2
+    done
+    current="$(dirname "$current")"
+    [[ $# -eq 1 && $1 == "-a" ]] && current="$(cd -P "$current" && pwd)"
+    echo "$current"
+}
+
+source "$(SourcePath)/math"
+source "$(SourcePath)/help"
+#Help() { ExitOK; }
+
+Milliseconds() {
+    perl -MTime::HiRes -e 'printf("%.0f",Time::HiRes::time()*1000)'
+}
+
+DeltaTime() {
+    local -i "now=$(Milliseconds)"
+    local -i "delta=now - StartingTime"
+    let "StartingTime = now"
+    if [[ ShowTime -eq 1 ]]; then
+        echo "$1 $(Leader "-" "$((70-${#1}))")> $delta milliseconds" >&2
+    fi
+}
+
+Flags() {
+    local f=""
+    if [[ $(($1 & BadAlignment)) -eq 0 ]]; then f+=" "; else f+="A"; fi
+    if [[ $(($1 & InvalidValue)) -eq 0 ]]; then f+=" "; else f+="I"; fi
+    if [[ $(($1 & Overlap)) -eq 0 ]]; then f+=" "; else f+="O"; fi
+    if [[ $(($1 & BadSize)) -eq 0 ]]; then f+=" "; else f+="S"; fi
+    echo "$f"
+}
+
+NameAndVersion() {
+    echo "$(Application) version $(Version)"
+    if [[ ${1:-1} -ne 0 ]]; then ExitOK; fi
+}
+
+Exists_() {  # Works except for empty arrays
+    eval 'test -n "${!'"$1"'[*]}"'
+}
+
+Exists() {
+    declare -p "$@" &>/dev/null
+}
+
+UseNull() {
+    if ! "Exists" "$1"; then
+        echo ""
+    else
+        echo "${!1}"
+    fi
+}
+
+UseDefault() { # $1=Name $2=Default
+    if ! "Exists" "$1"; then
+        echo ${2:-"Not Specified"}
+    else
+        echo "${!1}"
+    fi
+}
+
+UseYesNo() { # $1=Name $2=TrueName
+    if ! "Exists" "$1"; then
+        UseDefault "$1"
+    elif [[ ${!1} == ${2:-"true"} ]]; then
+        echo "Yes"
+    else
+        echo "No"
+    fi
+}
+
+ValidateArgument()
+{
+    if [[ -z $1 ]]; then
+        echo "$(Name): Argument for $opt option can not be zero in length." >&2
+        ExitFatal
+    fi
+}
+
+GetOrder() {
+    local "columns=${1:-"$DefaultColumns"}"
+    local -i "i" "j"
+    Order=()
+    ValidateArgument "$columns"
+    for (( i=0; i<${#columns}; i++ )); do
+        if ! "Sindex" "j" "$Letters" "${columns:i:1}"; then
+            echo "$(Name): Illegal letter in \"$columns\" argument for $opt option: ${columns:i:1}" >&2
+            ExitFatal
+        fi
+        Order+=("$j")
+    done
+}
+
+GetInteger() {
+    ValidateArgument "$OPTARG"
+    if ! "Svalidate" "$OPTARG" "$2" "$3"; then
+        echo "$(Name): Illegal argument for $opt option: $OPTARG" >&2
+        ExitFatal
+    fi
+    Uset "$1" "OPTARG"
+}
+
+ResetOptions() {
+    local "option" "options=${1:-abcdefimrstx}"
+    local -i "i"
+    ValidateArgument "$options"
+    for ((i=0; i<${#options}; ++i)); do
+        option="${options:i:1}"
+        case $option in
+        a)  let "AlignBy = 0";;
+        b)  let "UseLBA = 0";;
+        c)  GetOrder;;
+        d)  let "HideHeader = 0";;
+        e)  let "HideTable = 0";;
+        f)  let "ForceColor = 0";;
+        i)  ;;
+        m)  let "NoSeparator = 0";;
+        r)  let "UseColor = 0";;
+        s)  let "ShowTime = 0";;
+        t)  let "MaximumPartitions = 128";;
+        x)  let "UsePrefix = 0";;
+        *)  echo "$(Name): Illegal option in \"$options\" argument for $opt option: $option" >&2
+            ExitFatal;;
+        esac
+    done
+}
+
+GetOptions() {
+    local "opt"
+    let "OPTIND = 1"
+    let "OPTERR = 0"
+    while getopts ":AR:a:bc:defhimrst:vx" opt "$@"; do
+#       echo "opt=$opt OPTIND=$OPTIND OPTARG=$OPTARG OPTERR=$OPTERR" >&2
+        case $opt in
+        A)  ResetOptions;;
+        R)  ResetOptions "$OPTARG";;
+        a)  GetInteger "AlignBy" "128" "1073741824";;
+        b)  let "UseLBA = 1";;
+        c)  GetOrder "$OPTARG";;
+        d)  let "HideHeader = 1";;
+        e)  let "HideTable = 1";;
+        f)  let "ForceColor = 1";;
+        h)  Help;;
+        i)  ;;
+        m)  let "NoSeparator = 1";;
+        r)  let "UseColor = 1";;
+        s)  let "ShowTime = 1";;
+        t)  GetInteger "MaximumPartitions" "128" "4294967295";;
+        v)  NameAndVersion;;
+        x)  let "UsePrefix = 1";;
+        \?) #echo "Invalid option: -$OPTARG" >&2
+            echo "$(Name): Illegal option: $OPTARG" >&2
+            ExitFatal;;
+        :)  echo "$(Name): Option requires an argument: $OPTARG" >&2
+            ExitFatal;;
+        *)  echo "$(Name): An error occurred while parsing options." >&2
+            ExitFatal;;
+        esac
+    done
+#   OPTERR  optstring   Result
+#      0                OPTARG is not set; No message
+#      0       :        OPTARG is set; No message <---
+#      1                OPTARG is not set; Printed message <---
+#      1       :        OPTARG is not set; No message
+    return "0"
+}
+
+#########################
+
+AddKey() {
+    local "prefix=${4:-""}"
+    eval "$prefix"'Key+=("<key>$1</key>")'
+    eval "$prefix"'Type+=("$2")'
+    eval "$prefix"'Variable+=("$3")'
+    eval "$prefix"'Required+=("${5:-"1"}")'
+    let "Keys = ${#Key[@]}"
+}
+
+CopyKeys() {
+    eval 'Key=("${'"$1"'Key[@]}")'
+    eval 'Type=("${'"$1"'Type[@]}")'
+    eval 'Variable=("${'"$1"'Variable[@]}")'
+    eval 'Required=("${'"$1"'Required[@]}")'
+    let "Keys = ${#Key[@]}"
+}
+
+ReadValues() {
+    local "line" "tag" "result"
+    local -i "i=0"
+    while "read" "-r" "line" && [[ $line != "<dict>" ]]; do continue; done
+    while "read" "-r" "line" && [[ $line != "</dict>" ]]; do
+        #echo "i=$i #${Key[i]}#$line#" >&2
+        if [[ i -eq 0 && $line == ${ErrorKey[0]} ]]; then
+            CopyKeys "Error"
+        fi
+        if ! "read" "-r" "result"; then break; fi
+
+        while [[ $line > ${Key[i]} ]]; do
+            if [[ Required[i] -ne 0 || ++i -eq Keys ]]; then
+                break "2"
+            fi
+        done
+
+        if [[ $line == ${Key[i]} ]]; then
+            tag="${Type[i]}"
+            if [[ -z $tag ]]; then
+                result="${result#<}"
+                result="${result%/>}"
+                #echo "result for $line is #$result#" >&2
+            else
+                result="${result#<$tag>}"
+                result="${result%</$tag>}"
+            fi
+#           echo "${Variable[i]}"'="'"$result"'"' >&2
+            if [[ $tag == "integer" ]] && ! Svalidate "$result"; then
+                break
+            fi
+            eval "${Variable[i]}"'="$result"'
+            if [[ ++i -eq Keys ]]; then
+                break
+            fi
+        fi
+    done
+    while [[ i -lt Keys && Required[i] -eq 0 ]]; do let "++i"; done;
+
+    if [[ i -ne Keys ]]; then
+        echo "$(Name): This script is incompatible with the current version of macOS." >&2
+        ExitFatal
+    elif Exists "Error"; then
+        echo "$(Name): $ErrorMessage" >&2
+        if "Sge" "0" "$ErrorExitCode" || "Sge" "$ErrorExitCode" "256"; then
+            ExitFatal
+        fi
+        ExitFatal "$ErrorExitCode"
+    fi
+    return "0"
+}
+
+##########################
+#***********
+
+GetBlocks() {
+    local "bytes=$2" "label=$3" "equal"
+    local -i "base=${4:-"0"}" "blocks"
+    BytesToBlocks "blocks" "$bytes" "$base"
+    case $? in
+    1)  echo "$(Name): $label ($(Sfmt "$bytes") byte(s)) is not a multiple of the $(Ufmt "$BlockSize") byte block size." >&2
+        let "NotMultiple = 1";;
+    2)  if [[ base -ne 0 ]]; then equal=" or equal to"; else equal=""; fi
+        echo "$(Name): $label ($(Sfmt "$bytes") bytes) is less than$equal zero." >&2
+        let "OutOfBounds = 1";;
+    3)  if [[ base -ne 0 ]]; then equal=""; else equal=" or equal to"; fi
+        echo "$(Name): $label ($(Sfmt "$bytes") bytes) is greater than$equal the $(Sfmt "$MaximumByteSize") byte limit." >&2
+        let "OutOfBounds = 1";;
+    esac
+    eval "(($1 = blocks))"
+}
+
+ValidateBlockSize() {
+    local "size=$1" "lower=$2" "upper=$3"
+    if "Sgt" "$lower" "$size" || "Sgt" "$size" "$upper" || ! "SetBlockSize" "$size"; then
+        if [[ $DiskContent == "GUID_partition_scheme" ]]; then
+            echo "$(Name): The device block size of $size is not a power of 2 between $(Sfmt "$lower") and $(Sfmt "$upper")." >&2
+            ExitFatal
+        fi
+        #
+        # The assumption here is that if the block size is not a power of 2,
+        # then the drive will not be very large.
+        #
+        lower="128"
+        if "Sgt" "$lower" "$size" || "Sgt" "$size" "$upper"; then
+            echo "$(Name): The device block size of $size is not between $(Sfmt "$lower") and $(Sfmt "$upper")." >&2
+            ExitFatal
+        fi
+        let "BlockSize = size"
+        Umul "MaximumByteSize" "$(Udiv "-1" "$BlockSize")"  "$BlockSize"
+        let "PowerOf5 = -1"
+        let  "Exponent = ${#MaximumByteSize}"
+    fi
+    return "0"
+}
+
+#***********
+
+AddString() {
+    local values
+    printf -v values "%20u %s %u %u" "$2" "$1" "$3" "${#Array[@]}"
+    Identifier+=("${5:-}")
+    Content+=("${4:-}")
+    Label+=("${6:-}")
+    Personality+=("${7:-}")
+    Format+=("${8:-}")
+    Mounted+=("${9:-}")
+#   echo "$values" >&2
+    Array+=("$values")
+}
+
+QuotedExpand() { eval echo "$'$1'"; }
+
+Count_Also_Works() {
+    local -i "i" "n"
+    local "s"
+    for (( i=1; i<=$#; i++ )); do
+        s="${!i}"
+        let "n = ${#s}"
+        if [[ n -gt Length[i-1] ]]; then
+            let "Length[i-1] = n"
+        fi
+    done
+}
+
+Count() {
+    local -i "i=-1"
+    local "s"
+    for s in "$@"; do
+        if [[ ${#s} -gt Length[++i] ]]; then
+            let "Length[i] = ${#s}"
+        fi
+    done
+}
+
+Print() {
+    printf "$Format3" "$PreEscape" "$@" "$PostEscape"
+}
+
+Compute() {
+    local "function=$1"
+    shift "1"
+    local -i "i" "first=$1" "last=$2" "delta=$3" "attributes=$4"
+    local "content=$5" "id=${6:-}" "label=${7:-}" "personality=${8:-}" "format=${9:-}" "mounted=${10:-}"
+    local "start" "end" "size" "flags" "float"
+    if [[ UseLBA -ne 0 ]]; then
+        start="$(Ufmt "$first")"
+        end="$(Ufmt "$last")"
+        if [[ UsePrefix -ne 0 ]]; then
+            size="$(Ufix "$delta" "-4" "1")"
+        else
+            size="$(Ufmt "$delta" "1")"
+        fi
+        #printf -v "float" " (%7s)" "$(Ufix "$delta" "-4" "1")"
+        #size="$(Ufmt "$delta" "1")"
+        #if [[ UsePrefix -ne 0 ]]; then size+="$float"; fi
+    else
+        BlocksToBytes "start" "$first"
+        BlocksToBytes "size" "$delta" "1"
+        "Ssub" "end" "$(Sadd "$start" "$size")" "1"
+        start="$(Sfmt "$start")"
+        end="$(Sfmt "$end")"
+        if [[ UsePrefix -ne 0 ]]; then
+            size="$(Sfix "$size" "-4")"
+        else
+            size="$(Sfmt "$size")"
+        fi
+        #printf -v "float" " (%7s)" "$(Sfix "$size" "-4")"
+        #size="$(Sfmt "$size")"
+        #if [[ UsePrefix -ne 0 ]]; then size+="$float"; fi
+    fi
+    flags="$(Flags "$attributes")"
+    local -a "before=('$start' '$end' '$size' '$flags' '$id' '$content' '$label' '$personality' '$format' '$mounted')"
+    local -a "after=()"
+    for i in "${Order[@]}"; do
+        after+=("${before[i]}")
+    done
+
+    if [[ UseColor -ne 0 ]]; then
+        if [[ $((attributes & Errors)) -ne 0 ]]; then
+            PreEscape="$Red"
+        elif [[ $((attributes & Free)) -ne 0 ]]; then
+            PreEscape="$Green"
+        else
+            PreEscape="$White"
+        fi
+    fi
+
+    eval '$function "${after[@]}"'
+}
+
+Loop() {
+    local "function=$1"
+    local -i "j" "delta" "largest=0"
+    for (( j=0; j<i; j++ )); do
+        let "k = Row[j]"
+        Compute "$function" "${First[j]}" "${Last[j]}" "$((Last[j] - First[j] + 1))" "${Attributes[j]}"\
+        "${Content[k]}" "${Identifier[k]}" "${Label[k]}" "${Personality[k]}" "${Format[k]}" "${Mounted[k]}"
+        if [[ j -lt i-1 ]]; then
+            if [[ $((Attributes[j] & Carry)) -ne 0 ]]; then
+                let "largest = -1"
+            elif "Ugt" "${Last[j]}" "$largest"; then
+                let "largest = Last[j]"
+            fi
+            if "Ugt" "${First[j + 1]}" "$largest"; then
+                let "delta = First[j + 1] - largest - 1"
+                if [[ delta -ne 0 ]]; then
+                    Compute "$function" "$((largest + 1))" "$((First[j + 1] - 1))" "$delta" "$Free" "Free Space"
+                fi
+            fi
+#           if [[ $((Attributes[j] & Overlap)) -eq 0 ]]; then
+#               let "delta = First[j + 1] - Last[j] - 1"
+#               if [[ delta -ne 0 ]]; then
+#                   Compute "$function" "$((Last[j] + 1))" "$((First[j + 1] - 1))" "$delta" "$Free" "Free Space"
+#               fi
+#           fi
+        fi
+    done
+}
+
+Equal() { test ! "$1" == "$2"; echo "$?"; }
+NotEqual() { test "$1" == "$2"; echo "$?"; }
+
+DriveInfo() {
+
+    ##################### Start of Variables for Math Functions ##############################
+
+    # Unsigned Math #
+
+    declare -ir "Mask=$(((1 << 63) - 1))"
+
+    # Unsigned String Math #
+
+    declare -ir "Digits=10"
+    declare -i "TenPowerDigits"
+    printf -v "TenPowerDigits" "1%0*u" "$Digits" "0"
+    declare -r "TenPowerDigits"
+    #printf "Digits=%d TenPowerDigits=%d\n" $Digits $TenPowerDigits
+
+    # Conversion #
+
+    declare -i "BlockSize" "Exponent" "PowerOf5"
+    declare "MaximumByteSize"
+
+    ##################### End of Variables for Math Functions ##############################
+
+    declare "s"
+    declare -i "i" "j" "k" "m" "n"
+    declare -i "OutOfBounds=0" "NotMultiple=0"
+
+    declare -r "DefaultColumns=cstimn"
+    declare -ar "Header=('b+Begin' 'e+End' 's+Size' 'c-Code' 'i<Identifier' 't-Type' 'n-Name' 'p-Personality' 'f-Format' 'm>Mounted')"
+
+    declare "Letters"
+    for s in "${Header[@]}"; do
+        Letters+="${s:0:1}"
+    done
+    declare -r "Letters"
+
+    declare -i "AlignBy" "UseLBA"
+    declare -ai "Order"
+    declare -i "HideHeader" "HideTable" "ForceColor" "NoSeparator" "UseColor"
+    declare -i "ShowTime" "MaximumPartitions" "UsePrefix"
+    ResetOptions
+
+    declare -i "StartingTime=$(Milliseconds)"
+
+    #DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+    #echo "DIR=$DIR" >&2
+    #https://stackoverflow.com/questions/59895/getting-the-source-directory-of-a-bash-script-from-within?rq=1
+
+    declare -ir "BadAlignment=1" "InvalidValue=2" "Overlap=4" "BadSize=8" "Carry=16" "Free=32"
+    declare -ir "Errors=BadAlignment+InvalidValue+Overlap+BadSize"
+
+    if [[ $# -eq 0 ]]; then
+        echo "$(Name): For help, use the -h parameter." >&2
+        ExitFatal
+    fi
+
+    declare -a "DriveInfoOptions=()"
+    if "Exists" "DRIVEINFO_OPTIONS"; then
+        eval "DriveInfoOptions=($DRIVEINFO_OPTIONS)"
+    fi
+    if [[ ${#DriveInfoOptions[@]} -gt 0 ]]; then
+        GetOptions "${DriveInfoOptions[@]}"
+        if [[ ${#DriveInfoOptions[@]} -ge OPTIND ]]; then
+            echo "$(Name): Extra parameter found in DRIVEINFO_OPTIONS variable: ${DriveInfoOptions[OPTIND - 1]}" >&2
+            ExitFatal
+        fi
+        DriveInfoOptions=()
+    fi
+
+    GetOptions "$@"
+
+    if [[ UseColor -ne 0 && ForceColor -eq 0 ]]; then
+        if ! [[ -t 1 ]]; then
+            #echo "Redirecting or piping caused the r option to be ignored." >&2
+            let "UseColor = 0"
+        elif False && [[ $TERM != "xterm-256color" ]]; then # Skip since color always seems to work.
+            echo "The $TERM terminal type caused the r option to be ignored." >&2
+            let "UseColor = 0"
+        fi
+    fi
+
+    #printf "OPTIND=%s OPTARG=%s #=%d\n" "$OPTIND" "$OPTARG" "$#" >&2
+    shift "$((OPTIND - 1))"
+    #printf "after shift $=%d #=%d 1=%s\n" $? $# $1 >&2
+
+    if [[ $# -eq 0 ]]; then
+        echo "$(Name): At least one disk must be specified." >&2
+        ExitFatal
+    elif [[ $# -ne 1 ]]; then
+        echo "$(Name): Only one disk can be specified." >&2
+        ExitFatal
+    fi
+
+    declare -a "Array=()"
+    printf -v IFS " \t\n"
+
+    declare -a "Key=()" "Type=()" "Variable=()"
+    declare -ai "Required=()"
+    declare -i "Keys=0"
+    AddKey  "BusProtocol"         "string"  "DiskBusProtocol"         "" "0"
+    AddKey  "Content"             "string"  "DiskContent"
+    AddKey  "DeviceBlockSize"     "integer" "DiskDeviceBlockSize"
+    AddKey  "DeviceIdentifier"    "string"  "DiskDeviceIdentifier"
+    AddKey  "Ejectable"           ""        "DiskEjectable"           "" "0"
+#   AddKey  "IOKitSize"           "integer" "DiskIOKitSize"           "" "0"
+    AddKey  "IORegistryEntryName" "string"  "DiskIORegistryEntryName" "" "0"
+    AddKey  "Internal"            ""        "DiskInternal"            "" "0"
+#   AddKey  "MediaName"           "string"  "DiskMediaName"           "" "0"
+    AddKey  "RemovableMedia"      ""        "DiskRemovableMedia"      "" "0"
+    AddKey  "Size"                "integer" "DiskSize"
+    AddKey  "SolidState"          ""        "DiskSolidState"          "" "0"
+#   AddKey  "TotalSize"           "integer" "DiskTotalSize"
+    AddKey  "VirtualOrPhysical"   "string"  "DiskVirtualOrPhysical"   "" "0"
+    AddKey  "WritableMedia"       ""        "DiskWritableMedia"       "" "0"
+
+    declare -a "SliceKey=()" "SliceType=()" "SliceVariable=()"
+    declare -ai "SliceRequired=()"
+    AddKey  "Content"                     "string"  "SliceContent"        "Slice"
+    AddKey  "DeviceIdentifier"            "string"  "SliceIdentifier"     "Slice"
+    AddKey  "FilesystemName"              "string"  "SlicePersonality"    "Slice" "0"
+#   AddKey  "FilesystemType"              "string"  "FilesystemType"      "Slice" "0"
+    AddKey  "FilesystemUserVisibleName"   "string"  "SliceFormat"         "Slice" "0"
+#   AddKey  "IORegistryEntryName"         "string"  "IORegistryEntryName" "Slice" "0"
+    AddKey  "MountPoint"                  "string"  "SliceMountPoint"     "Slice" "0"
+    AddKey  "PartitionMapPartitionOffset" "integer" "SliceOffset"         "Slice"
+    AddKey  "Size"                        "integer" "SliceSize"           "Slice"
+#   AddKey  "TotalSize"                   "integer" "TotalSize"           "Slice"
+    AddKey  "VolumeName"                  "string"  "SliceVolumeName"     "Slice" "0"
+
+    declare -a "ErrorKey=()" "ErrorType=()" "ErrorVariable=()"
+    declare -ai "ErrorRequired=()"
+    AddKey "Error"        ""        "Error"         "Error"
+    AddKey "ErrorMessage" "string"  "ErrorMessage"  "Error"
+    AddKey "ExitCode"     "integer" "ErrorExitCode" "Error"
+
+    DeltaTime "Done initializing."
+
+    declare "${Variable[@]}" "${SliceVariable[@]}" "${ErrorVariable[@]}"
+    unset "${Variable[@]}" "${ErrorVariable[@]}"
+    ReadValues < <(diskutil info -plist "$1")
+    #ReadValues <<< "$(diskutil info -plist "$1")"
+    if [[ $DiskContent != "GUID_partition_scheme" ]]; then
+        let "HideTable = 1"
+        #echo "$(Name): The disk is not using a GPT." >&2
+        #ExitFatal
+    fi
+    ValidateBlockSize "$DiskDeviceBlockSize" "512" "33554432"
+
+    if [[ HideTable -eq 0 ]]; then
+        declare -ir "MBRSize=BlockSize"
+        declare -ir "HeaderSize=BlockSize"
+        declare -ir "MBRBlocks=1"
+        declare -ir "HeaderBlocks=1"
+        declare -ir "TableBlocks=$(Uceiling "$((MaximumPartitions * 128))" "$BlockSize")"
+        declare -ir "TableSize=TableBlocks * BlockSize"
+
+        if "Sgt" "$((2 * (HeaderSize + TableSize) + MBRSize))" "$DiskSize"; then
+            echo "$(Name): The size of the GPT is larger than the disk size." >&2
+            ExitFatal
+        fi
+
+        declare -i "BlockAlignBy=0" "AlignByExponent=0"
+        if [[ AlignBy -ne 0 ]]; then
+            if ! "Udivmod" "BlockAlignBy" "$AlignBy" "$BlockSize"; then
+                echo "$(Name): The argument for the a option is not a multiple of the $(Ufmt "$BlockSize") byte block size: $(Ufmt "$AlignBy")" >&2
+                ExitFatal
+            fi
+            for (( k=BlockAlignBy; (k & 1)==0; k>>=1 )); do
+                let "AlignByExponent++"
+            done
+            if [[ k -ne 1 ]]; then let "AlignByExponent = -1"; fi
+        fi
+        #echo "AlignBy = $AlignBy, BlockAlignBy = $BlockAlignBy" >&2
+    fi
+
+    declare -i "DiskDeviceBlocks"
+    GetBlocks "DiskDeviceBlocks" "$DiskSize" "Disk size" "1"
+
+    DeltaTime "Done reading whole drive information."
+
+    if [[ HideTable -eq 0 ]]; then
+        declare -a -i "First" "Last" "Attributes" "Row"
+        declare -a "Identifier" "Content" "Label" "Personality" "Format" "Mounted"
+
+        AddString "A" "0" "$((MBRBlocks - 1))" "PMBR"
+        AddString "A" "$MBRBlocks" "$((MBRBlocks + HeaderBlocks - 1))" "Pri GPT header"
+        AddString "A" "$((MBRBlocks + HeaderBlocks))" "$((MBRBlocks + HeaderBlocks + TableBlocks - 1))" "Pri GPT table"
+
+        DeltaTime "Done adding MBR and Primary GPT."
+
+        declare -a "Slices=( /dev/"$DiskDeviceIdentifier"s* )"
+        if [[ ${#Slices[@]} -eq 1 && ${Slices[0]} == "/dev/${DiskDeviceIdentifier}s*" ]]; then
+           Slices=()
+        fi
+        declare -i "SliceLength=1"
+        declare "Index" "Priority"
+        if [[ ${#Slices[@]} -ne 0 ]]; then
+            for Slice in "${Slices[@]}"; do
+                Index="${Slice/\/dev\/$1s/}"
+                if [[ ${#Index} -gt SliceLength ]]; then
+                    let "SliceLength=${#Index}";
+                fi
+            done
+        fi
+
+        DeltaTime "Done getting list of slices."
+
+        declare -i "StartingBlock" "EndingBlock"
+        declare "EndingOffset"
+        CopyKeys "Slice"
+
+        declare "SliceMounted"
+        if [[ ${#Slices[@]} -ne 0 ]]; then
+            for Slice in "${Slices[@]}"; do
+                unset "${Variable[@]}"
+                ReadValues < <(diskutil info -plist "$Slice")
+                #ReadValues <<< "$(diskutil info -plist "$Slice")"
+                GetBlocks "StartingBlock" "$SliceOffset" "Partition first block offset of $SliceIdentifier"
+                EndingOffset="$(Ssub "$(Sadd "$SliceOffset" "$SliceSize")" "$DiskDeviceBlockSize")"
+                GetBlocks "EndingBlock" "$EndingOffset" "Partition last block offset of $SliceIdentifier"
+
+                Index="${Slice/\/dev\/$1s/}"
+                printf -v "Priority" "B%0*s" "$SliceLength" "$Index"
+        #       if ! "Exists" "SliceMountPoint" || [[ -z $SliceMountPoint ]] || ! Exists "SliceVolumeName"; then
+        #           SliceVolumeName=""
+        #       fi
+
+                if ! "Exists" "SliceMountPoint" || [[ -z $SliceMountPoint ]]; then
+                    SliceMounted="No"
+                else
+                    SliceMounted="Yes"
+                fi
+
+                AddString "$Priority" "$StartingBlock" "$EndingBlock" "$SliceContent" "$SliceIdentifier" "$(UseNull "SliceVolumeName")"\
+                "$(UseNull "SlicePersonality")" "$(UseNull "SliceFormat")" "$SliceMounted"
+            done
+        fi
+
+        DeltaTime "Done reading slice information."
+
+        if [[ NotMultiple -ne 0 || OutOfBounds -ne 0 ]]; then
+            echo "$(Name): Quiting because one or more byte values were either to large not a mulitple of the block size." >&2
+            ExitFatal
+        fi
+
+        AddString "C" "$((DiskDeviceBlocks - HeaderBlocks - TableBlocks))" "$((DiskDeviceBlocks - HeaderBlocks - 1))" "Sec GPT table"
+        AddString "C" "$((DiskDeviceBlocks - HeaderBlocks))" "$((DiskDeviceBlocks - 1))" "Sec GPT header"
+
+        DeltaTime "Done adding secondary GPT."
+
+        Sorted=$(printf "%s\n" "${Array[@]}" | "sort")
+
+        DeltaTime "Done sorting."
+
+        let "i = 0"
+        while "read" "-r" "First[i]" "Priority" "Last[i]" "Row[i]"; do
+           #echo "$Priority ${First[i]} ${Last[i]} ${Row[i]}" >&2
+           let "Attributes[i] = 0"
+           let "i++"
+        done <<< "$Sorted"
+
+        DeltaTime "Done building sorted arrays."
+
+        #TBD This introduces an error for testing.
+        #let "Last[3]+=1"
+        #let "Last[3]+=DiskSize"
+
+        for (( j=0; j<i; j++ )); do
+        #   echo "$j#${First[j]}#${Last[j]}#" >&2
+            if "Ugt" "${First[j]}" "${Last[j]}"; then let "Attributes[j] |= Carry | InvalidValue"; fi
+
+            if [[ j -gt 2 && j -lt i-2 && BlockAlignBy -gt 0 ]]; then
+                if [[ $(Umod "${First[j]}" "$BlockAlignBy") -ne 0 ]]; then
+                    let "Attributes[j] |= BadAlignment"
+                fi
+                let "k = Last[j] - First[j] + 1"
+
+                if [[ $(Umod "$k" "$BlockAlignBy") -ne 0 || k -eq 0 && "$AlignByExponent" -lt 0 ]]; then
+                    let "Attributes[j] |= BadSize"
+                fi
+            fi
+
+            if "Uge" "${First[j]}" "$DiskDeviceBlocks" || "Uge" "${Last[j]}" "$DiskDeviceBlocks"
+                then let "Attributes[j] |= InvalidValue"
+            fi
+
+            if [[ j -lt i-1 ]]; then
+                if [ $((Attributes[j] & Carry)) -ne 0 ] || "Uge" "${Last[j]}" "$((First[j + 1]))"; then
+                    let "Attributes[j] |= Overlap"
+                fi
+            fi
+        done
+
+        DeltaTime "Done with slice validation."
+    fi
+
+    if [[ HideHeader -eq 0 ]]; then
+        let "n=-20"
+        printf "  %*s %s\n" "$n" "Identifier:" "$DiskDeviceIdentifier"
+        printf "  %*s %s\n" "$n" "Name:" "$(UseDefault "DiskIORegistryEntryName")"
+        printf "  %*s %s\n" "$n" "Content:" "$DiskContent"
+        printf "  %*s %s\n" "$n" "Protocol:" "$(UseDefault "DiskBusProtocol")"
+        printf "  %*s %s\n" "$n" "Size:" "$(Sfix "$DiskSize" "4")B ($(Sfmt "$DiskSize") bytes)"
+        printf "  %*s %s\n" "$n" "Logical Sectors:" "$(Ufix "$DiskDeviceBlocks" "4") blocks ($(Ufmt "$DiskDeviceBlocks") blocks)"
+        printf "  %*s %s\n" "$n" "Logical Sector Size:" "$(Ufmt "$DiskDeviceBlockSize") bytes per block"
+        printf "  %*s %s\n" "$n" "Read-Only:" "$(UseYesNo "DiskWritableMedia" "false")"
+        printf "  %*s %s\n" "$n" "Internal:" "$(UseYesNo "DiskInternal")"
+        printf "  %*s %s\n" "$n" "Removable:" "$(UseYesNo "DiskRemovableMedia")"
+        printf "  %*s %s\n" "$n" "Solid State:" "$(UseYesNo "DiskSolidState")"
+        printf "  %*s %s\n" "$n" "Virtual:" "$(UseYesNo "DiskVirtualOrPhysical" "Virtual")"
+        if [[ HideTable -eq 0 ]]; then
+            if [[ UseLBA -ne 0 ]]; then
+                printf "  %*s %s\n" "$n" "Table Units:" "$(Ufmt "$BlockSize") byte blocks"
+            else
+                printf "  %*s %s\n" "$n" "Table Units:" "Bytes"
+            fi
+            if [[ AlignBy -gt 0 ]]; then
+                printf "  %*s %s\n" "$n" "Alignment Check:" "$(Ufmt "$AlignBy") byte boundry"
+            fi
+        fi
+        DeltaTime "Done with whole drive information output."
+    fi
+
+    if [[ HideHeader -eq 0 && HideTable -eq 0 ]]; then
+        echo
+    fi
+
+    if [[ HideTable -eq 0 ]]; then
+        declare -ai "Length=()"
+        declare "Title" "Format1" "Format2" "Format3" "PreEscape" "PostEscape"
+        declare "Reset" "White" "Red" "Green"
+        Reset=$(QuotedExpand "\033[0m")
+        case 3 in
+        1)  White=$(QuotedExpand "\033[47;30m")
+            Red=$(QuotedExpand "\033[41;97m")
+            Green=$(QuotedExpand "\033[42;97m");;
+        2)  White=$(QuotedExpand "\033[48;5;231m\033[38;5;0m")
+            Red=$(QuotedExpand "\033[48;5;9m\033[38;5;231m")
+            Green=$(QuotedExpand "\033[48;5;40m\033[38;5;231m");;
+        3)  White=$(QuotedExpand "\033[48;5;231m\033[38;5;16m")    # 16->0
+            Red=$(QuotedExpand "\033[48;5;196m\033[38;5;231m")     # 196->9
+            Green=$(QuotedExpand "\033[48;5;10m\033[38;5;231m");;  # 10->40
+        esac
+
+        for j in "${Order[@]}"; do
+            Length+=("0")
+        done
+
+        Loop "Count"
+
+        declare -i "Field" "Width" "Left" "Right"
+        declare "Justification"
+
+        let "m = 0"
+        for (( j=0; j<${#Order[@]}; j++ )); do
+            Title="${Header[Order[j]]}"
+            Justification="${Title:1:1}"
+            Title="${Title:2}"
+
+            Format1+="  ";
+            Format2+="  ";
+            Format3+="  ";
+
+            if [[ j -eq 0 ]]; then
+                Format1+="%s"
+                Format2+="%s"
+                Format3+="%s"
+            fi
+
+            let "Field = Length[j] > ${#Title} ? Length[j] : ${#Title}"
+
+            let "k = Field - ${#Title}"
+            let "n = k / 2"
+            let "m = m + n"
+            Format1+="$(Leader " " "$m")$Title"
+            let "m = n + k % 2"
+
+            Format2+="$(Leader "-" "$Field")"
+
+            if [[ $Justification == "-" || $Justification == "+" ]]; then
+                let "Width = Field"
+            else
+                let "Width = Length[j]"
+            fi
+
+            if [[ $Justification == "-" || $Justification == "<" ]]; then
+                let "Left = (Field - Width) / 2"
+                if [[ j+1 -ne ${#Order[@]} || UseColor -ne 0 ]]; then
+                    let "Right = Field - Left"
+                    Format3+="$(Leader " " "$Left")%-${Right}s"
+                else
+                    Format3+="$(Leader " " "$Left")%s"
+                fi
+            else
+                let "Left = (Field + Width) / 2"
+                if [[ j+1 -ne ${#Order[@]} || UseColor -ne 0 ]]; then
+                    let "Right = Field - Left"
+                    Format3+="%${Left}s$(Leader " " "$Right")"
+                else
+                    Format3+="%${Left}s"
+                fi
+            fi
+        done
+
+        if [[ UseColor -ne 0 ]]; then
+            Format1+=$(Leader " " "$m")
+        fi
+
+        #if [[ UseColor -eq 0 ]]; then
+        #    Format3="$(Ssed "s/ *$//" "$Format3")"
+        #else
+        #    Format1+=$(Leader " " "$m")
+        #fi
+
+        Format1+="%s\n";
+        Format2+="%s\n";
+        Format3+="%s\n";
+
+        #echo "Format3=$Format3"
+
+        DeltaTime "Done generating formats."
+
+        if [[ UseColor -ne 0 ]]; then
+            PreEscape="$White"
+            PostEscape="$Reset"
+        fi
+        printf "$Format1" "$PreEscape" "$PostEscape"
+        printf "$Format2" "$PreEscape" "$PostEscape"
+        Loop "Print"
+
+        DeltaTime "Done with slice information output."
+    fi
+
+    DeltaTime "DONE!"
+
+    return "0"
+}
+DriveInfo "$@"
+#0c0a710f

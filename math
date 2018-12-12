@@ -1,0 +1,534 @@
+#!/bin/bash
+#
+# math - Provide math functions for large integers.
+#
+# Copyright (c) 2018 David M. Anderson
+#
+# Distributed under the terms of the GNU General Public
+# License (GPL) version 3 (GPLv3) or (at your option) any later version.
+#
+#
+#    This file is part of driveinfo.
+#
+#    driveinfo is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    driveinfo is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with driveinfo.  If not, see <https://www.gnu.org/licenses/>.
+#
+Validate "$@"
+########################### Unsigned Math ####################################
+
+NumericalOperator() {
+    if [[ ${1:0:1} =~ [_[:alpha:]] ]]; then
+        echo "eval { $1=\"\$(shift 1; ${FUNCNAME[1]} \"\$@\")\"; return; }"
+    fi
+}
+
+RecursiveOperator() {
+    if [[ ${#FUNCNAME[@]} -le 2 || ${FUNCNAME[1]} != ${FUNCNAME[2]} ]]; then
+        local -a "p=('\"\${'{2.."$#"}'}\"')"
+        echo "eval { $1=\"\$(${FUNCNAME[1]} ${p[@]})\"; return; }"
+    fi
+}
+
+BinaryOperator() {
+    if [[ $# -eq 3 ]]; then
+        echo "eval { $1=\"\$(${FUNCNAME[1]} \"\$2\" \"\$3\")\"; return; }"
+    fi
+}
+
+Uset() {
+    eval "(($1 = $2))"
+}
+
+Ugt() {
+    local -i "a=$1" "b=$2"
+    if [[ a -lt 0 ]]; then
+        if [[ b -ge 0 ]]; then return "0"; fi
+    elif [[ b -lt 0 ]]; then return "1"; fi
+    if [[ a -gt b ]]; then return "0"; else return "1"; fi
+}
+
+Uge() {
+    local -i "a=$1" "b=$2"
+    if [[ a -lt 0 ]]; then
+        if [[ b -ge 0 ]]; then return "0"; fi
+    elif [[ b -lt 0 ]]; then return "1"; fi
+    if [[ a -ge b ]]; then return "0"; else return "1"; fi
+}
+
+Uadd() {
+    $(BinaryOperator "$@") # Binary
+    local -i "a=$1" "b=$2" "c"
+    let "c = a + b"
+    printf "%u\n" "$c"
+    #echo "$c"
+    if "Ugt" "$a" "$c"; then return "0"; fi
+    if "Ugt" "$b" "$c"; then return "0"; fi
+    return "1"
+}
+
+Umul() {
+    $(BinaryOperator "$@") # Binary
+    local -i "a=$1" "b=$2" "c"
+    let "c = a * b"
+    printf "%u\n" "$c"
+}
+
+Udivmod() {
+    if [[ $# -gt 2 ]]; then
+        local -i "Udivmod_r" "Udivmod_q"
+        if [[ $# -gt 3 ]]; then
+            Udivmod "$3" "$4"
+            Uset "$2" "Udivmod_r"
+        else
+            Udivmod "$2" "$3"
+        fi
+        Uset "$1" "Udivmod_q"
+        return "$((Udivmod_r==0?0:1))"
+    fi
+    local -i "y=$1" "x=$2" "r1" "q1" "r2" "q2" "r3" "q3" "r4" "q4"
+    #printf "b %s %s %s %s %u %u\n" "$1" "$2" "$3" "$4" "$y" "$x" >&2
+    let "r1 = y & 1"
+    let "q1 = (y >> 1) & Mask"
+    let "r2 = q1 % x"
+    let "q2 = q1 / x"
+    let "r3 = r2 + r2 + r1"
+    let "q3 = r3 / x"
+    let "r4 = r3 % x"
+    let "q4 = q2 + q2 + q3"
+    #printf "q4 r4 %u %u\n" "$q4" "$r4" >&2
+    let "Udivmod_r = r4"
+    let "Udivmod_q = q4"
+}
+
+Udiv() {
+    local -i "q" "r"
+    Udivmod "q" "r" "$1" "$2"
+    printf "%u\n" "$q"
+}
+
+Umod() {
+    #printf "a %s %s\n" "$1" "$2" >&2
+    local -i "q" "r"
+    Udivmod "q" "r" "$1" "$2"
+    #printf "result from Udivmod: %u %u\n" "$q" "$r" >&2
+    printf "%u\n" "$r"
+}
+
+Uceiling() {
+    local -i "q" "r"
+    Udivmod "q" "r" "$1" "$2"
+    if [[ r -ne 0 ]]; then ((q++)); fi
+    printf "%u\n" "$q"
+}
+
+###################### Unsigned String Math ##########################################
+
+SgetUint() {
+    local "string=$2"
+    local -i "length=${#string}" "value"
+    if [[ index -le length ]]; then
+        value="10#${string:length-index:Digits}"
+    elif [[ index-length -lt Digits ]]; then
+        value="10#${string:0:Digits+length-index}"
+    else
+        let "value = 0"
+        let "count++"
+    fi
+    Uset "$1" "value"
+    #printf "SgetUint index=%d length=%d value=%d fail=%d\n" $index $length $value $fail >&2
+}
+
+SUadd() {
+#   echo "Enter SUadd $# : $@" >&2
+    if [[ $# -ne 0 ]]; then
+        $(BinaryOperator "$@") # Binary
+        local -i "index=0" "carry=0"
+        local "string1=$1" "string2=$2" "result"
+        SUadd # Again
+        echo "$result"
+#       echo "Done SUadd $result" >&2
+    else
+#       Again() {
+        local "string3"
+        local -i "value1" "value2" "value3" "count=0"
+        let "index += Digits"
+        #printf "#%s#%s#%d %d\n" "$string1" "$string2" $index $Digits >&2
+        SgetUint "value1" "$string1"
+        SgetUint "value2" "$string2"
+        if [[ count -ne 2 ]]; then
+            let "value3 = value1 + value2 + carry"
+            #printf "sum=%d %d %d %d\n" $value3 $value1 $value2 $carry >&2
+            let "carry = 0"
+            if [[ value3 -ge TenPowerDigits ]]; then
+               let "value3 -= TenPowerDigits"
+               let "carry = 1"
+            fi
+            SUadd # Again
+            if [[ carry -ne 0 ]]; then
+                printf -v string3 "%0*d" "$Digits" "$value3"
+            else
+                printf -v string3 "%d" "$value3"
+                let "carry = 1"
+            fi
+            result+="$string3"
+        elif [[ carry -ne 0 ]]; then
+           result="1"
+        else
+           result=""
+        fi
+        let "index -= Digits"
+#       }
+    fi
+}
+
+SUsub() {
+    if [[ $# -ne 0 ]]; then
+        $(BinaryOperator "$@") # Binary
+        local -i "index=0" "negate=0" "borrow=0"
+        local "string1=$1" "string2=$2" "result"
+        SUsub # Again
+        if [[ negate -ne 0 ]]; then
+            printf -v "string1" "1%0*s" "$negate" "0"
+            string2="$result"
+            let "borrow = 0"
+            SUsub # Again
+        fi
+        echo "$result"
+    else
+#       Again() {
+        local "string3"
+        local -i "value1" "value2" "value3" "count=0"
+        let "index += Digits"
+        #printf "#%s#%s#%d %d\n" "$string1" "$string2" $index $Digits >&2
+        SgetUint "value1" "$string1"
+        SgetUint "value2" "$string2"
+        if [[ count -ne 2 ]]; then
+            let "value3 = value1 - value2 - borrow"
+
+            #printf "difference=%d %d %d %d\n" $value3 $value1 $value2 $borrow >&2
+
+            let "borrow = 0"
+            if [[ value3 -lt 0 ]]; then
+               let "value3 += TenPowerDigits"
+               let "borrow = 1"
+            fi
+            SUsub # Again
+            if [[ borrow -ne 0 ]]; then
+                printf -v string3 "%0*d" "$Digits" "$value3"
+            elif [[ value3 -ne 0 ]]; then
+                printf -v string3 "%d" "$value3"
+                let "borrow = 1"
+            elif [[ index -eq Digits ]]; then
+                string3="0"
+            else
+                string3=""
+            fi
+            result+="$string3"
+        elif [[ negate -ne 0 ]]; then
+            result="-"
+        else
+            result=""
+            if [[ borrow -ne 0 ]]; then
+                #echo "******************** ERROR ********************** >&2
+                let "negate = index - Digits"
+            fi
+        fi
+        let "index -= Digits"
+#       }
+    fi
+}
+
+########################## Signed String Math ####################################
+
+Sadd() {
+    $(BinaryOperator "$@") # Binary
+    local "x=$1" "y=$2" "m"
+    local -i "d=$((${#x}>${#y}?${#x}:${#y}))"
+    printf -v "m" "1%0*s" "$d" "0"
+    local "z=$m"
+    if [[ ${x:0:1} != '-' ]]; then
+        z="$(SUadd "$z" "$x")"
+    else
+        z="$(SUsub "$z" "${x:1}")"
+    fi
+    if [[ ${y:0:1} != '-' ]]; then
+        z="$(SUadd "$z" "$y")"
+    else
+        z="$(SUsub "$z" "${y:1}")"
+    fi
+    if [[ ${#z} -gt d ]]; then
+        z="$(SUsub "$z" "$m")"
+    else
+        z="-$(SUsub "$m" "$z")"
+    fi
+    echo "$z"
+}
+
+Ssub() {
+    $(BinaryOperator "$@") # Binary
+    local "x=$1" "y=$2" "z"
+    if [[ ${y:0:1} != '-' ]]; then
+        #z="$(Sadd "$x" "-$y")"
+        Sadd "z" "$x" "-$y"
+    else
+       #z="$(Sadd "$x" "${y:1}")"
+       Sadd "z" "$x" "${y:1}"
+    fi
+    echo "$z"
+}
+
+Slt0() {
+    local "z=$1"
+    if [[ ${z:0:1} == "-" ]]; then
+        return "0"
+    else
+        return "1"
+    fi
+}
+
+Sge0() {
+    ! Slt0 "$1"
+    return "$?"
+}
+
+Sge() {
+    Sge0 "$(Ssub "$1" "$2")"
+    return "$?"
+}
+
+Sgt() {
+    Slt0 "$(Ssub "$2" "$1")"
+    return "$?"
+}
+
+Sle() {
+    Sge "$2" "$1"
+    return "$?"
+}
+
+Slt() {
+    Sgt "$2" "$1"
+    return "$?"
+}
+
+Svalidate()
+{
+    local "absolute" "value=$1" "lower=${2:-none}" "upper=${3:-none}"
+    absolute="${value/#-}"
+    if [[ -z $absolute ]]; then return "11"; fi;
+    if [[ $absolute != "0" ]]; then
+        if [[ ${absolute:0:1} < "1" ]]; then return "21"; fi
+        if [[ ${absolute:0:1} > "9" ]]; then return "31"; fi
+        if [[ -n ${absolute//[0-9]} ]]; then return "41"; fi;
+    fi
+    if [[ $lower != "none" ]] && "Sgt" "$lower" "$value"; then return "2"; fi;
+    if [[ $upper != "none" ]] && "Sgt" "$value" "$upper"; then return "3"; fi;
+    return "0"
+}
+
+######################### String Format ############################################
+
+Leader() {
+    if [[ $2 -gt 0 ]]; then
+        eval 'printf "%0.1s" "'"$1"'"{1..'"$2"'}'
+    fi
+}
+
+Separate() {
+    local "a=$1" "b"
+    local -i "n=${#a}" "m"
+    if [[ ${a:0:1} == "-" ]]; then
+        let "m = (n - 2) % 3 + 2"
+    else
+        let "m = (n - 1) % 3 + 1"
+    fi
+    b="${a:0:m}"
+    for (( j=m; j<n; j+=3 )); do
+        b+=",${a:j:3}"
+    done
+    echo "$b"
+}
+
+Sfmt() {
+    local "a=$1"
+    if [[ NoSeparator -ne 0 ]]; then
+        echo "$a"
+    else
+        echo "$(Separate "$a")"
+    fi
+}
+
+Sfix() {
+    local "a=$1" "b" "c" "prefix= kMGTPEZY" "remainder" "middle" "zeros"
+    local -i "i" "j" "k" "m=${#a}" "n=${#prefix}-1" "integer=$2"
+    local -i "digits=integer < 0 ? -$integer : $integer"
+    # Round the value
+    if [[ digits -lt m ]]; then
+        zeros="$(Leader "0" "$((m - digits))")"
+        b="${a:0:digits}"
+        remainder="${a:digits}"
+        middle="5${zeros:1}"
+        if "Sgt" "$remainder" "$middle"; then
+            b=$(Sadd "$b" "1")
+        elif [[ $remainder == $middle && $((b & 1)) -eq 1 ]]; then
+            b=$(Sadd "$b" "1")
+        fi
+        b+="$zeros"
+    else
+        b="$a"
+    fi
+#   echo "zeros=$zeros remainder=$remainder middle=$middle b=$b m=$m"     >&2
+    # Add the metric prefix
+    if [[ m -lt digits ]]; then
+        let "digits = m"
+    fi
+    let "j = (m - 1) / 3"
+
+    if [[ j -ge n ]]; then
+        let "k = m - 3 * n" # digits left of decimal point
+    else
+        let "k = m - 3 * j" # digits left of decimal point
+    fi
+
+    c="${b:0:k}"
+    let "i = digits - k" # digits to right of decimal point
+    if [[ i -gt 0 ]]; then
+        c+=".${b:k:i}"
+    fi
+    if [[ j -ge n ]]; then
+        c+=" ${prefix: -1}"
+    elif [[ integer -lt 0 || j -ne 0 ]]; then
+        c+=" ${prefix:j:1}"
+    fi
+
+    echo "$c"
+}
+
+######################## Unsigned Format ###########################################
+
+Ustr() {
+    local -i a="$1" "b=${2:-"0"}"
+    local  "c"
+    if [[ a -ne 0 || b -eq 0 ]]; then
+        printf -v "c" "%u" "$a"
+    else
+        printf -v "c" "%u" "-1"
+        c="$(Sadd "$c" "1")"
+    fi
+    echo "$c"
+}
+
+Ufmt() {
+    echo "$(Sfmt "$(Ustr "$@")")"
+}
+
+Ufix() {
+    echo "$(Sfix "$(Ustr "$1" "${3:-"0"}")" "$2")"
+}
+
+######################### String Functions #######################################
+
+Sindex() {
+    $(BinaryOperator "$@") # Binary
+    local "x=${1%%$2*}"
+    local -i "n=${#x}"
+#   [[ "$x" == "$1" ]] && echo "-1" || echo "${#x}"
+    if [[ n -eq "${#1}" ]]; then
+       echo "-1"
+       return "1"
+    else
+       echo "$n"
+       return "0"
+    fi
+}
+
+Ssed() {
+    local "r=$(echo -n "$2" | sed -e "$1")"
+    echo "$r"
+}
+
+####################### Conversion ##############################################
+
+BlocksToBytes() {
+    $(NumericalOperator "$@")
+    local "BlocksToBytes_b"
+    local -i "a=$1" "b=${2:-"0"}" "q" "r"
+    if [[ a -eq 0 && b -ne 0 ]]; then
+        BlocksToBytes_b="$MaximumByteSize"
+    else
+        Udivmod "q" "r" "$a" "$PowerOf5"
+        let "r *= BlockSize"
+        if [[ q -eq 0 ]]; then
+            printf -v "BlocksToBytes_b" "%u" "$r"
+        else
+            printf -v "BlocksToBytes_b" "%u%0*u" "$q" "$Exponent" "$r"
+        fi
+    fi
+    echo "$BlocksToBytes_b"
+}
+
+BytesToBlocks() {
+    $(NumericalOperator "$@")
+    local -i "BytesToBlocks_b" "BytesToBlocks_s"
+
+    local "a=$1"
+    local -i "b=${2:-"0"}" "c" "d" "n=${#a}"
+    if [[ b -ne 0 ]]; then
+        a="$(Ssub "$a" "1")"
+    fi
+    if "Sgt" "0" "$a"; then
+        let "BytesToBlocks_b = 0"
+        let "BytesToBlocks_s = 2"
+    elif "Sge" "$a" "$MaximumByteSize"; then
+        let "BytesToBlocks_b = 0"
+        let "BytesToBlocks_s = 3"
+    else
+        a="$1"
+        if [[ Exponent -lt n ]]; then
+            c="10#${a:0:n-Exponent}"
+            d="10#${a:n-Exponent}"
+            let "c = c * PowerOf5 + d  / BlockSize"
+        else
+            let "d = a"
+            let "c = d / BlockSize"
+        fi
+        let "BytesToBlocks_b = c"
+        let "BytesToBlocks_s = d % BlockSize == 0 ? 0 : 1"
+    fi
+    printf "%u\n" "$BytesToBlocks_b"
+    return "$BytesToBlocks_s"
+}
+
+SetBlockSize() {
+    let "BlockSize=$1"
+    let "Exponent=0"
+    let "PowerOf5=1"
+    local -i "j" "status" "minimum=${2:-7}" "maximum=${3:-62}"
+    for (( j=BlockSize; (j&1)==0; j>>=1 )); do
+        let "PowerOf5 *= 5"
+        let "Exponent++"
+        #echo "j=$j Exponent=$Exponent PowerOf5=$PowerOf5" >&2
+    done
+    let "status = j != 1 || Exponent < minimum || Exponent > maximum ? 1 : 0"
+    if [[ status -eq 0 ]]; then
+        BlocksToBytes "MaximumByteSize" "-1"
+        MaximumByteSize="$(Sadd "$MaximumByteSize" "$BlockSize")"
+    fi
+#   echo "BlockSize=$BlockSize Exponent=$Exponent PowerOf5=$PowerOf5" >&2
+#   printf "Exponent=%u, PowerOf5=%'u\n" "$Exponent" "$PowerOf5" >&2
+#   echo "MaximumByteSize=$(Separate "$MaximumByteSize")" >&2
+    return "$status"
+}
+
+###################################################################
+#9837dd65
