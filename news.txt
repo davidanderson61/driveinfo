@@ -1,0 +1,13 @@
+1.0.1 (12/13/2018):
+-------------------
+
+- Added p option to allow help text to be interactive.
+
+- Added this file.
+
+- Fixed minor errors in the documentation.
+
+1.0.0 (12/12/2018):
+-------------------
+
+- Initial public release

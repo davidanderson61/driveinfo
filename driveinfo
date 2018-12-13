@@ -32,7 +32,7 @@ fi
 set -u
 
 Application() { echo "driveinfo"; }
-Version() { echo "1.0.1 beta"; }
+Version() { echo "1.0.1"; }
 ExitOK() { exit "0"; }
 ExitFatal() { exit "${1:-1}"; }
 Name() {
@@ -213,7 +213,7 @@ GetOptions() {
     local "opt"
     let "OPTIND = 1"
     let "OPTERR = 0"
-    while getopts ":AR:a:bc:defhimrst:vx" opt "$@"; do
+    while getopts ":AR:a:bc:defhimprst:vx" opt "$@"; do
 #       echo "opt=$opt OPTIND=$OPTIND OPTARG=$OPTARG OPTERR=$OPTERR" >&2
         case $opt in
         A)  ResetOptions;;
@@ -227,6 +227,7 @@ GetOptions() {
         h)  Help;;
         i)  ;;
         m)  let "NoSeparator = 1";;
+        p)  "$0" -h | less; ExitOK;;
         r)  let "UseColor = 1";;
         s)  let "ShowTime = 1";;
         t)  GetInteger "MaximumPartitions" "128" "4294967295";;
@@ -929,4 +930,4 @@ DriveInfo() {
     return "0"
 }
 DriveInfo "$@"
-#3d39728a
+#947bcefd

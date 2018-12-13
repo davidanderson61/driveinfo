@@ -33,7 +33,7 @@ Name
 
 SYNOPSIS
      driveinfo [-A] [-R options-to-reset] [-a byte-alignment] [-b]
-               [-c column-list] [-defhimrs] [-t maximum-entries] [-vx]
+               [-c column-list] [-defhimprs] [-t maximum-entries] [-vx]
                [--] device
 
 DESCRIPTION
@@ -88,6 +88,10 @@ DESCRIPTION
           environment variable, otherwise this option will be ignored.
 
      -m   Omit thousands separator.
+
+     -p   Pipe the help text to the less command, then quit. All previous
+          options are ignored. This allows the help text to be viewed
+          interactively.
 
      -r   Enable colorized output. ANSI escape codes are used to highlight free
           space and entries with error codes. No attempt is made to determine
@@ -210,10 +214,10 @@ EXAMPLES
 
      Ignore the DRIVEINFO_OPTIONS variable and display the default information
      for disk0.
-     driveinfo -D disk0
+     driveinfo -A disk0
 
      Replacement for the "sudo gpt -r show /dev/disk0" command.
-     driveinfo -Dbdmc bsit /dev/disk0
+     driveinfo -Abdmc bsit /dev/disk0
 
      Determine if the "A" and "S" error codes should be issued for partition
      entries. The argument value of 4096 bytes is the alignment requirment for
@@ -280,4 +284,4 @@ END_OF_HELP_TEXT
 }
 #        1         2         3         4         5         6         7         8
 #2345678901234567890123456789012345678901234567890123456789012345678901234567890
-#ecbc5776
+#2d3bf948
