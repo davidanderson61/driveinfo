@@ -38,7 +38,7 @@ SYNOPSIS
 
 DESCRIPTION
      The driveinfo command gets detailed information about a specific drive.
-     The script parses a property lists emitted by the diskutil command to
+     The script parses property lists emitted by the diskutil command to
      compile the information. If the drive contains a GUID Partition Table
      (GPT), then detailed information about each partition is also included in
      a tabular form. This also allows free space on a drive, using a GPT, to be
@@ -280,4 +280,4 @@ END_OF_HELP_TEXT
 }
 #        1         2         3         4         5         6         7         8
 #2345678901234567890123456789012345678901234567890123456789012345678901234567890
-#efe24bc8
+#ecbc5776
