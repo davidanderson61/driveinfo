@@ -25,262 +25,453 @@
 #
 Validate "$@"
 
-Help() {
-    cat << END_OF_HELP_TEXT
-
-Name
-     driveinfo -- provide partition information for GPT drives
-
-SYNOPSIS
-     driveinfo [-A] [-R options-to-reset] [-a byte-alignment] [-b]
-               [-c column-list] [-defhimprs] [-t maximum-entries] [-vx]
-               [--] device
-
-DESCRIPTION
-     The driveinfo command gets detailed information about a specific drive.
-     The script parses property lists emitted by the diskutil command to
-     compile the information. If the drive contains a GUID Partition Table
-     (GPT), then detailed information about each partition is also included in
-     a tabular form. This also allows free space on a drive, using a GPT, to be
-     identified.
-
-     The gpt command can be used to view the actual stored GPT values in in a
-     tabular form. Starting with macOS, the gpt command can no longer read the
-     GPT on an operating system boot drive, unless System Integrity Protection
-     (SIP) is disabled. The driveinfo command does not require disabling SIP
-     and can produce the same basic tabular output as the gpt command.
-
-     The options are applied as read from left to right and are as follows:
-
-     -A   Reset to the default all options. This option is the same as entering
-          the -R abcdefimrstx option.
-
-     -R options-to-reset
-          Reset to the default value any options given as the argument.
-
-     -a byte-alignment
-          Set the byte alignment value used to determine if the "A" and "S"
-          error codes should be issued. The default is to never issue either
-          code. Normally, the byte alignment value should be a power of 2
-          greater than the logical sector size.
-
-     -b   Display blocks instead of bytes. Each block is equal to the logical
-          sector size in bytes.
-
-     -c column-list
-          Specify which columns to display. Each character in the argument
-          represents a column type. The list of possible column types is given
-          in the COLUMNS section. The default is to display the "$DefaultColumns"
-          column types.
-
-     -d   Omit the header.
-
-     -e   Omit the table.
-
-     -f   Force use of color. Color sequences are normally disabled if the
-          output is not directed to a terminal. This can be overridden by
-          setting this flag.
-
-     -h   Display this help text, then quit. All previous options are ignored.
-
-     -i   Do not validate the source script. This option must occur before any
-          other options both on the command line and in the DRIVEINFO_OPTIONS
-          environment variable, otherwise this option will be ignored.
-
-     -m   Omit thousands separator.
-
-     -p   Pipe the help text to the less command, then quit. All previous
-          options are ignored. This allows the help text to be viewed
-          interactively.
-
-     -r   Enable colorized output. ANSI escape codes are used to highlight free
-          space and entries with error codes. No attempt is made to determine
-          if the ANSI escape codes are compatible with the current terminal.
-
-     -s   Display execution times. This option is for diagnostic purposes.
-
-     -t   Set the maximum number of partition entries allowed in GPT. This
-          option should not be used unless the user knows the GPT was created
-          with more than the default of 128 possible entries.
-
-     -v   Display the version, then quit.  All previous options are ignored.
-
-     -x   Add a metric prefix to the values.
-
-     --   Signals the end of options and disables further option processing.
-
-DEVICES
-     A device parameter can usually be any of the following:
-
-     +   The disk identifier of a drive with a GPT. Any entry of the form of
-         diskU, where U is zero or a positive decimal integer, e.g. disk0.
-
-     +   The device node entry containing the disk identifier of a drive with a
-         GPT.  Any entry of the form of /dev/[r]diskU, where U is zero or a
-         positive decimal integer, e.g. /dev/disk0.
-
-     Further information about devices can be found on the man page
-     for diskutil.
-
-DISK IDENTIFIER
-     The (BSD) disk identifier string variously identifies a physical or
-     logical device unit, a session (if any) upon that device, a slice
-     (partition) upon that session (if any), or a virtual logical volume. In
-     the context of this command, a disk identifier may take the form of diskU
-     or diskUsS, where:
-
-     +   U is the device unit represented by zero or a positive decimal
-         integer (possibly multi-digit). It may refer to hardware (e.g. a hard
-         drive, optical drive, or memory card) or a virtual "drive" constructed
-         by software (e.g. an AppleRAID Set, disk image, CoreStorage LV, etc.).
-
-     +   S is the slice (partition) represented by a positive decimal integer
-         (possibly multi-digit). Upon this partition, the raw data that
-         underlies a user-visible file system is usually present, but it may
-         also contain specialized data for certain 3rd-party database programs,
-         or data required for the system software (e.g. EFI partitions, booter
-         partitions, APM partition map data, etc.), or, notably, it might
-         contain backing-store physical volumes for AppleRAID, CoreStorage,
-         APFS, or 3rd-party Storage Systems.
-
-     Further information about disk identifiers can be found on the man page
-     for diskutil.
-
-COLUMNS
-     Below is a list of types of columns of information that can be ouput.
-
-     b   Begin:       Base zero beginning offset.
-     c   Code:        Error codes.
-     e   End:         Base zero ending offset.
-     f   Format:      Known or last known file system (user visible) name.
-     i   Identifier:  Disk identifier of the partition (slice).
-     m   Mounted:     Either "Yes" for a mounted partition, otherwise "No".
-     n   Name:        Known or last known volume label.
-     p   Personality: Known or last known file system personality name.
-     s   Size:        If Ending < Beginning, then wrapping is assumed.
-     t   Type:        See TYPES section.
-
-TYPES
-     Below is a list of entry types that reserve storage for partitioning
-     information.
-
-     PMBR                Protective Master Boot Record
-     Pri GPT header      Primary GUID Partition Table header
-     Pri GPT table       Primary GUID Partition Table array
-     Sec GPT header      Secondary (Backup) GUID Partition Table header
-     Sec GPT table       Secondary (Backup) GUID Partition Table array
-
-     Below is a list of entry types and GUIDs for common partitions. This is
-     not a complete list.
-
-     Apple_APFS             7C3457EF-0000-11AA-AA11-00306543ECAC
-     Apple_Boot             426F6F74-0000-11AA-AA11-00306543ECAC
-     Apple_CoreStorage      53746F72-6167-11AA-AA11-00306543ECAC
-     Apple_HFS              48465300-0000-11AA-AA11-00306543ECAC
-     Bios Boot Partition    21686148-6449-6E6F-744E-656564454649
-     EFI                    C12A7328-F81F-11D2-BA4B-00A0C93EC93B
-     Linux Filesystem       0FC63DAF-8483-4772-8E79-3D69D8477DE4
-     Linux LVM              E6D6D379-F507-44C2-A23C-238F2A3DF928
-     Linux Swap             0657FD6D-A4AB-43C4-84E5-0933C84B4F4F
-     Microsoft Basic Data   EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
-     Microsoft Reserved     E3C9E316-0B5C-4DB8-817D-F92DF00215AE
-     Windows Recovery       DE94BBA4-06D1-4D40-A16A-BFD50179D6AC
-
-ERROR CODES
-     These letters may appear in the "Code" column.
-
-     A   The "Begin" value is not a multiple of the byte-alignment value. This
-         check only performed on partition entries.
-     I   One or more values are invalid. A value is invalid, if at least one
-         of the three following conditions occurs. First, the "Begin" value is
-         greater than the "End" value. Second, the "Begin" block value is
-         greater than or equal to the number of sectors. Third, the "End" block
-         value is greater than or equal to the number of sectors.
-     O   The entry overlaps another entry. There is overlap, if at least one of
-         the two following conditions occurs. First, the "End" value is greater
-         than or equal to the "Begin" value of the next entry. Second, the
-         entry is not last and the "Begin" value greater than the "End" value.
-     S   The "Size" value is not a multiple of the byte-alignment value. This
-         check only performed on partition entries.
-
-COLORS
-     Red     The entry contains one or more error codes
-     Green   The entry represents free space on the drive.
-
-EXAMPLES
-     If the DRIVEINFO_OPTIONS variable is defined, then the options are read
-     from this variable before displaying the information for disk0.
-     driveinfo disk0
-
-     Ignore the DRIVEINFO_OPTIONS variable and display the default information
-     for disk0.
-     driveinfo -A disk0
-
-     Replacement for the "sudo gpt -r show /dev/disk0" command.
-     driveinfo -Abdmc bsit /dev/disk0
-
-     Determine if the "A" and "S" error codes should be issued for partition
-     entries. The argument value of 4096 bytes is the alignment requirment for
-     proper operation of Apple_APFS, Apple_Boot, Apple_CoreStorage and
-     Apple_HFS partitions.
-     driveinfo -a 4096 -r diskutil disk0
-
-     Use  color to highlight free space and entries with error codes
-     driveinfo -r disk0
-
-     Reset b and d options, if specified in the DRIVEINFO_OPTIONS variable.
-     driveinfo -R bd disk0
-
-EXIT STATUS
-     An value of 0 is returned to indicate success. A value of 2 is returned,
-     if the script determines a error condition. Otherwise, any exit code,
-     found in a diskutil property list, will be the returned exit status of
-     the script.
-
-ENVIRONMENT
-     The following environment variable affects the execution of driveinfo:
-
-     DRIVEINFO_OPTIONS
-
-     If the DRIVEINFO_OPTIONS variable exists in the environment, then the
-     options are read from this variable, before reading any additional options
-     from the command line.
-
-VALIDATION
-     Normally, a CRC32 validation is preformed on the source script. This can
-     be disabled with the i option. If the script is deliberately modified,
-     then the hexadecimal value given in the error message should be used to
-     replace the value at the end of the script. This value should be followed
-     by a newline.
-
-FILES
-     driveinfo
-
-SEE ALSO
-     diskutil(8), gpt(8)
-
-HISTORY
-     The driveinfo utility is not part of macOS. The first downloadable version
-     appeared in December of 2018.
-
-VERSION
-     This documentation is current for version $(Version) of driveinfo.
-
-BUGS
-     The tabular information is only produced for drives with a GPT.
-
-     The default maximum number of partition entries allowed in GPT is assumed
-     to be 128. While this is a fairly safe assumption, if the actual value is
-     different, then this utility will not know unless set by the t option.
-
-AUTHOR
-     driveinfo was written by David M. Anderson.
-
-     Support and development are available at
-     https://sourceforge.net/projects/driveinfo/
-
+HelpCommand() {
+    local "application=$(Application)" "APPLICATION=$(Supper "$(Application)")"
+    eval "$1" << END_OF_HELP_TEXT
+.\"
+.\" $application.8 - This is the man page for $application.
+.\"
+.\" Copyright (c) 2018 David M. Anderson
+.\"
+.\" Distributed under the terms of the GNU General Public
+.\" License (GPL) version 3 (GPLv3) or (at your option) any later version.
+.\"
+.\"
+.\"    This file is part of $application.
+.\"
+.\"    $application is free software: you can redistribute it and/or modify
+.\"    it under the terms of the GNU General Public License as published by
+.\"    the Free Software Foundation, either version 3 of the License, or
+.\"    (at your option) any later version.
+.\"
+.\"    $application is distributed in the hope that it will be useful,
+.\"    but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\"    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\"    GNU General Public License for more details.
+.\"
+.\"    You should have received a copy of the GNU General Public License
+.\"    along with $application.  If not, see <https://www.gnu.org/licenses/>.
+.\"
+.Dd December 22, 2018
+.Os
+.Dt $APPLICATION 8
+.Sh NAME
+.Nm $application
+.Nd "provide partition information for GPT drives"
+.Sh SYNOPSIS
+.Nm
+.Op Fl A
+.Op Fl R Ar options-to-reset 
+.Op Fl a Ar byte-alignment 
+.Op Fl b 
+.Op Fl c Ar column-list 
+.Op Fl defhimprs 
+.Op Fl t Ar maximum-entries 
+.Op Fl vx 
+.Op Fl z Ar file-list 
+.Op Fl - 
+.Op Ar device 
+.Sh DESCRIPTION
+The
+.Nm
+command gets detailed information about a specific drive.
+The script parses property lists emitted by the
+.Xr diskutil 8
+command to
+compile the information. If the drive contains a GUID Partition Table
+(GPT), then detailed information about each partition is also included in
+a tabular form. This also allows free space on a drive, using a GPT, to be
+identified.
+.Pp
+The
+.Xr gpt 8
+command can be used to view the actual stored GPT values in in a
+tabular form. Starting with macOS, the
+.Xr gpt 8
+command can no longer read the
+GPT on an operating system boot drive, unless System Integrity Protection
+(SIP) is disabled. The
+.Nm
+command does not require disabling SIP
+and can produce the same basic tabular output as the
+.Xr gpt 8 
+command.
+.Pp
+The options are applied as read from left to right and are as follows:
+.Bl -tag -width 3n
+.\" ==========
+.It Fl A
+Reset to the default all options. This option is the same as entering
+the
+.Fl R Ar abcdefimrstx
+option.
+.\" ==========
+.It Fl R Ar options-to-reset
+Reset to the default value any options given as the argument.
+.\" ==========
+.It Fl a Ar byte-alignment
+Set the byte alignment value used to determine if the "A" and "S"
+error codes should be issued. The default is to never issue either
+code. Normally, the byte alignment value should be a power of 2
+greater than the logical sector size.
+.\" ==========
+.It Fl b
+Display blocks instead of bytes. Each block is equal to the logical
+sector size in bytes.
+.\" ==========
+.It Fl c Ar column-list
+Specify which columns to display. Each character in the argument
+represents a column type. The list of possible column types is given
+in the COLUMNS section. The default is to display the "$DefaultColumns"
+column types.
+.\" ==========
+.It Fl d
+Omit the header.
+.\" ==========
+.It Fl e
+Omit the table.
+.\" ==========
+.It Fl f
+Force use of color. Color sequences are normally disabled if the
+output is not directed to a terminal. This can be overridden by
+setting this flag.
+.\" ==========
+.It Fl h
+Display this help text, then quit. All previous options are ignored.
+.\" ==========
+.It Fl i
+Do not validate the source script. This option must occur before any
+other options both on the command line and in the ${APPLICATION}_OPTIONS
+environment variable, otherwise this option will be ignored.
+.\" ==========
+.It Fl m
+Omit thousands separator.
+.\" ==========
+.It Fl p
+Pipe the help text to the less command, then quit. All previous
+options are ignored. This allows the help text to be viewed
+interactively.
+.\" ==========
+.It Fl r
+Enable colorized output. ANSI escape codes are used to highlight free
+space and entries with error codes. No attempt is made to determine
+if the ANSI escape codes are compatible with the current terminal.
+.\" ==========
+.It Fl s
+Display execution times. This option is for diagnostic purposes.
+.\" ==========
+.It Fl t Ar maximum-entries
+Set the maximum number of partition entries allowed in GPT. This
+option should not be used unless the user knows the GPT was created
+with more than the default of 128 possible entries.
+.\" ==========
+.It Fl v
+Display the version, then quit.  All previous options are ignored.
+.\" ==========
+.It Fl x
+Add a metric prefix to the values.
+.\" ==========
+.It Fl z Ar file-list
+Install the files associated with this command, then quit. All previous
+options are ignored. Each character in the argument represents a file
+type. The list of possible file types is given in the FILES section.
+.\" ==========
+.It Fl -
+Signals the end of options and disables further option processing.
+.El
+.Sh DEVICES
+A device parameter can usually be any of the following:
+.Bl -bullet 
+.It
+The
+.Sy disk identifier
+(see below) of a drive with a GPT. Any entry of the form of
+.Pa diskU ,
+where U is zero or a positive decimal integer, e.g.
+.Pa disk0 .
+.It
+The device node entry containing the
+.Sy disk identifier
+of a drive with a
+GPT.  Any entry of the form of
+.Pa /dev/[r]diskU ,
+where U is zero or a positive decimal integer, e.g.
+.Pa /dev/disk0 .
+.El
+.Pp
+Further information about devices can be found on the man page
+for
+.Xr diskutil 8 .
+.Sh DISK IDENTIFIER
+The (BSD)
+.Sy disk identifier
+string variously identifies a physical or
+logical device unit, a session (if any) upon that device, a slice
+(partition) upon that session (if any), or a virtual logical volume. In
+the context of this command, a
+.Sy disk identifier
+may take the form of
+.Pa diskU
+or
+.Pa diskUsS ,
+where:
+.Bl -bullet
+.It
+.Pa U
+is the device unit represented by zero or a positive decimal
+integer (possibly multi-digit). It may refer to hardware (e.g. a hard
+drive, optical drive, or memory card) or a virtual "drive" constructed
+by software (e.g. an AppleRAID Set, disk image, CoreStorage LV, etc.).
+.It
+.Pa S
+is the slice (partition) represented by a positive decimal integer
+(possibly multi-digit). Upon this partition, the raw data that
+underlies a user-visible file system is usually present, but it may
+also contain specialized data for certain 3rd-party database programs,
+or data required for the system software (e.g. EFI partitions, booter
+partitions, APM partition map data, etc.), or, notably, it might
+contain backing-store physical volumes for AppleRAID, CoreStorage,
+APFS, or 3rd-party Storage Systems.
+.El
+.Pp
+.\" .Bl -column ".hi" ".12345678901" "Either "Yes" for a mounted partition, otherwise "No"."
+Further information about
+.Sy disk identifiers
+can be found on the man page
+for
+.Xr diskutil 8 .
+.Sh COLUMNS
+Below is a list of information column types that can be output.
+The letters may appear as the argument to the c option. 
+.Pp
+.Bl -tag -compact -width 16n
+.It b\ \ \ Begin:
+Base zero beginning offset.
+.It c\ \ \ Code:
+.Sy Error codes
+(see below).
+.It e\ \ \ End:
+Base zero ending offset.
+.It f\ \ \ Format:
+Known or last known file system (user visible) name.
+.It i\ \ \ Identifier:
+Disk identifier of the partition (slice).
+.It m\ \ \ Mounted:
+Either "Yes" for a mounted partition, otherwise "No".
+.It n\ \ \ Name:
+Known or last known volume label.
+.It p\ \ \ Personality:
+Known or last known file system personality name.
+.It s\ \ \ Size:
+If Ending < Beginning, then wrapping is assumed.
+.It t\ \ \ Type:
+.Sy Entry type
+(see below).
+.El
+.Sh ENTRY TYPES
+Below is a list of
+.Sy entry types
+that reserve storage for partitioning
+information.
+.Pp
+.Bl -tag -compact -width 18n
+.It PMBR
+Protective Master Boot Record
+.It Pri GPT header
+Primary GUID Partition Table header
+.It Pri GPT table
+Primary GUID Partition Table array
+.It Sec GPT header
+Secondary (Backup) GUID Partition Table header
+.It Sec GPT table
+Secondary (Backup) GUID Partition Table array
+.El
+.Pp
+Below is a list of
+.Sy entry types
+and GUIDs for common partitions. This is
+not a complete list.
+.Pp
+.Bl -tag -compact -width 24n
+.It Apple_APFS
+7C3457EF-0000-11AA-AA11-00306543ECAC
+.It Apple_Boot
+426F6F74-0000-11AA-AA11-00306543ECAC
+.It Apple_CoreStorage
+53746F72-6167-11AA-AA11-00306543ECAC
+.It Apple_HFS
+48465300-0000-11AA-AA11-00306543ECAC
+.It Bios Boot Partition
+21686148-6449-6E6F-744E-656564454649
+.It EFI
+C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+.It Linux Filesystem
+0FC63DAF-8483-4772-8E79-3D69D8477DE4
+.It Linux LVM
+E6D6D379-F507-44C2-A23C-238F2A3DF928
+.It Linux Swap
+0657FD6D-A4AB-43C4-84E5-0933C84B4F4F
+.It Microsoft Basic Data
+EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
+.It Microsoft Reserved
+E3C9E316-0B5C-4DB8-817D-F92DF00215AE
+.It Windows Recovery
+DE94BBA4-06D1-4D40-A16A-BFD50179D6AC
+.El
+.Sh ERROR CODES
+These letters may appear in the "Code" column.
+.Pp
+.Bl -tag -compact -width 2n
+.It A
+The "Begin" value is not a multiple of the byte-alignment value. This
+check only performed on partition entries.
+.It I
+One or more values are invalid. A value is invalid, if at least one
+of the three following conditions occurs. First, the "Begin" value is
+greater than the "End" value. Second, the "Begin" block value is
+greater than or equal to the number of sectors. Third, the "End" block
+value is greater than or equal to the number of sectors.
+.It O
+The entry overlaps another entry. There is overlap, if at least one of
+the two following conditions occurs. First, the "End" value is greater
+than or equal to the "Begin" value of the next entry. Second, the
+entry is not last and the "Begin" value greater than the "End" value.
+.It S
+The "Size" value is not a multiple of the byte-alignment value. This
+check only performed on partition entries.
+.El
+.Sh COLORS
+.Bl -tag -compact -width 6n
+.It Red
+The entry contains one or more error codes.
+.It Green
+The entry represents free space on the drive.
+.El
+.Sh ENVIRONMENT
+The following environment variable affects the execution of
+.Nm :
+.Pp
+${APPLICATION}_OPTIONS
+.Pp
+If the ${APPLICATION}_OPTIONS variable exists in the environment, then the
+options are read from this variable, before reading any additional options
+from the command line.
+.Pp
+${APPLICATION}_INCLUDE
+.Pp
+.\"45678901234567890123456789012345678901234567890123456789012345678901234567890
+The ${APPLICATION}_INCLUDE variable is only used during code development. Under
+normal usage, this variable is not accessed and can therefore be ignored. If
+the ${APPLICATION}_INCLUDE variable exists in the environment during code
+devolopment, then the directory stored in this variable may be searched for
+include files. 
+.Sh FILES
+The letters given below may appear as the argument to the z option. This
+option installs the
+.Nm
+command into macOS. Note: Any existing files will be replaced.
+.Pp
+.Bl -tag -compact -width 2n
+.It c
+Copy the bash script to the
+.Pa /usr/local/bin/$application
+file.
+.\"
+.\"No check is made to determine if the
+.\".Pa /usr/local/bin
+.\"directory is included in the PATH environment variable. Further information
+.\"about the PATH environment variable can be found on the man page for
+.\".Xr bash 1 .
+.\"
+.It p
+Write the man page to the
+.Pa /usr/local/share/man/man8/$application.8
+file. 
+.\"
+.\"No check is made to determine if the
+.\".Pa /usr/local/share/man
+.\"directory is included in the MANPATH environment variable.
+.\"Further information about the MANPATH environment variable can be found on
+.\"the man page for
+.\".Xr man 1 .
+.\"
+.El
+.Sh EXAMPLES
+.Dl $application disk0
+If the ${APPLICATION}_OPTIONS variable is defined, then the options are read
+from this variable before displaying the information for disk0.
+.Pp
+.Dl $application -A disk0
+Ignore the ${APPLICATION}_OPTIONS variable and display the default information
+for disk0.
+.Pp
+.Dl $application -Abdmc bsit /dev/disk0
+Replacement for the "sudo gpt -r show /dev/disk0" command.
+.Pp
+.Dl $application -a 4096 -r disk0
+Determine if the "A" and "S" error codes should be issued for partition
+entries. The argument value of 4096 bytes is the alignment requirment for
+proper operation of Apple_APFS, Apple_Boot, Apple_CoreStorage and
+Apple_HFS partitions.
+.Pp
+.Dl $application -r disk0
+Use color to highlight free space and entries with error codes.
+.Pp
+.Dl $application -R bd disk0
+Reset b and d options, if specified in the ${APPLICATION}_OPTIONS variable.
+.Pp
+.Dl $application -z cp
+Install this command. See the FILES section for more information.
+.Sh DIAGNOSTICS
+Problems found with entries in (GPT) are flagged by letters appearing in the
+"Code" column of the table.
+.Pp
+The s option can be used to determine the execution times of the script. This
+options verifies that a majority of the time is spent waiting for the
+.Xr diskutil 8
+command to return property lists.
+.Sh COMPATIBILITY
+At the time of this writing,
+.Nm
+found to be compatible with High Sierra (macOS 10.13) and newer versions of macOS.
+.Sh EXIT STATUS
+An value of 0 is returned to indicate success. A value of 2 is returned,
+if the script determines a error condition. Otherwise, any exit code,
+found in a
+.Xr diskutil 8
+property list, will be the returned exit status of
+the script.
+.Sh VALIDATION
+Normally, a CRC32 validation is preformed on the source script. This can
+be disabled with the i option. If the script is deliberately modified,
+then the hexadecimal value given in the error message should be used to
+replace the value at the end of the script. This value should be followed
+by a newline.
+.Sh SEE ALSO
+.Xr diskutil 8 ,
+.Xr gpt 8
+.Sh HISTORY
+The
+.Nm
+utility is not part of macOS. The first downloadable version
+appeared in December of 2018.
+.Sh VERSION
+This documentation is current for version $(Version) of
+.Nm .
+.Sh BUGS
+The tabular information is only produced for drives with a GPT.
+.Pp
+The default maximum number of partition entries allowed in GPT is assumed
+to be 128. While this is a fairly safe assumption, if the actual value is
+different, then this utility will not know unless set by the t option.
+.Sh AUTHOR
+.Nm
+was written by David M. Anderson.
+.Pp
+Support and development are available at
+.br
+https://sourceforge.net/projects/$application/
 END_OF_HELP_TEXT
-    ExitOK
 }
 #        1         2         3         4         5         6         7         8
 #2345678901234567890123456789012345678901234567890123456789012345678901234567890

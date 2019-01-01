@@ -32,7 +32,7 @@ fi
 set -u
 
 Application() { echo "driveinfo"; }
-Version() { echo "1.0.1"; }
+Version() { echo "1.0.2"; }
 ExitOK() { exit "0"; }
 ExitFatal() { exit "${1:-1}"; }
 Name() {
@@ -88,9 +88,31 @@ SourcePath() { # Use parameter -a for absolute path.
     echo "$current"
 }
 
-source "$(SourcePath)/math"
-source "$(SourcePath)/help"
-#Help() { ExitOK; }
+Exists_() {  # Works except for empty arrays
+    eval 'test -n "${!'"$1"'[*]}"'
+}
+
+Exists() {
+    declare -p "$@" &>/dev/null
+}
+
+Include()
+{
+    local "file=$1"
+    shift "1"
+    if [[ -f $(SourcePath)/$file ]]; then 
+        source "$(SourcePath)/$file" 
+    elif [[ -f ./$file ]]; then 
+        source "./$file"
+    elif "Exists" "DRIVEINFO_INCLUDE" && [[ -f $DRIVEINFO_INCLUDE/$file ]]; then
+        source "$DRIVEINFO_INCLUDE/$file"
+    else
+        echo "$(Name): $file: File not found." >&2
+        ExitFatal
+    fi
+}
+Include "math" "$@"
+Include "help" "$@"
 
 Milliseconds() {
     perl -MTime::HiRes -e 'printf("%.0f",Time::HiRes::time()*1000)'
@@ -117,14 +139,6 @@ Flags() {
 NameAndVersion() {
     echo "$(Application) version $(Version)"
     if [[ ${1:-1} -ne 0 ]]; then ExitOK; fi
-}
-
-Exists_() {  # Works except for empty arrays
-    eval 'test -n "${!'"$1"'[*]}"'
-}
-
-Exists() {
-    declare -p "$@" &>/dev/null
 }
 
 UseNull() {
@@ -184,6 +198,143 @@ GetInteger() {
     Uset "$1" "OPTARG"
 }
 
+Help()
+{
+    case ${1:-1} in
+    1) HelpCommand "groff -Tascii -mandoc -P-ubo";;
+    2) HelpCommand "groff -Tascii -mandoc | less";;
+    esac
+    ExitOK
+}
+
+Clean() 
+{
+    local "file=$1" "modes=${2:-644}" "groups=$(id -Gn)"
+    local "owner_group=${3:-$USER:${groups/%\ */}}" 
+    local -i "fail=0"
+    if ! chflags 0 "$file" 2>/dev/null; then
+        fail="1"
+        echo "$(Name): $file: Failed to remove file flags." >&2
+    fi
+    if ! chmod -N "$file" 2>/dev/null; then
+        fail="1"
+        echo "$(Name): $file: Failed to remove Access Control Lists." >&2
+    fi
+    if ! chmod "$modes" "$file"  2>/dev/null; then
+        fail="1"
+        echo "$(Name): $file: Failed to change file mode bits to $modes." >&2
+    fi
+    if ! xattr -c "$file"  2>/dev/null; then
+        fail="1"
+        echo "$(Name): $file: Failed to remove all extended attributes." >&2
+    fi
+    if ! chown "$owner_group" "$file"  2>/dev/null; then
+        fail="1"
+        echo "$(Name): $file: Failed to change the access and modification times." >&2
+    fi
+    if ! touch -acfm "$file"  2>/dev/null; then
+        fail="1"
+        echo "$(Name): $file: Failed to change file owner and group to $owner_group." >&2
+    fi
+    return "$fail"
+}
+
+Install()
+{
+#    if [[ $UID != 0 ]] ; then
+#        echo "Not running as root; attempting to elevate privileges via sudo...."
+#        sudo "$0" "$@"
+#        if [[ $? != 0 ]] ; then
+#            echo "This script must be run as root (or using sudo). Exiting!"
+#            exit 1
+#        else
+#            exit 0
+#        fi
+#    fi
+    local "yn" "files" "bin=/usr/local/bin" "script=$(Application)"
+    local "man=/usr/local/share/man/man8" "page=$(Application).8" 
+    local -i "i" "doCommand=0" "doPage=0" "fail=0"
+    ValidateArgument "$OPTARG"
+    for (( i=0; i<${#OPTARG}; i++ )); do
+        case ${OPTARG:i:1} in
+        c) let "doCommand = 1";;
+        p) let "doPage = 1";;
+        *) echo "$(Name): Illegal letter in \"$OPTARG\" argument for $opt option: ${OPTARG:i:1}" >&2
+           ExitFatal;;
+        esac
+    done
+
+    [[ doCommand -ne 0 ]] && files+="This bash script will be installed to the $bin/$script file.\n"
+    [[ doPage -ne 0 ]] && files+="The man page will be installed to the $man/$page\nfile.\n"
+    if [[ -n $files ]]; then
+        if [[ $UID != 0 ]]; then
+           echo "$(Name): The z option requires running as root user (or using sudo)." >&2
+           ExitFatal
+        fi
+        printf "${files}OK? [n] "
+        read yn
+        if [[ $yn != Y* && $yn != y* ]]; then
+            echo "$(Name): No files were installed." >&2
+            ExitFatal; 
+        fi
+    fi
+
+    while [[ doCommand -ne 0 ]]; do
+        if [[ $0 -ef $bin/$script ]]; then
+            echo "$(Name): File $0 is file $bin/$script (not copied)." >&2
+            Clean "$bin/$script" "755" || fail="1"
+            break
+        fi
+        if cmp -s "$0" "$bin/$script"; then
+            echo "$(Name): Files $0 and $bin/$script are identical (not copied)." >&2
+            Clean "$bin/$script" "755" || fail="1"
+            break;
+        fi
+        if [[ ! -d $bin ]] && ! mkdir -p "$bin" 2>/dev/null; then 
+            fail="1"
+            echo "$(Name): $bin: Failed to create the directory." >&2
+            break   
+        fi
+        if ! cp -fX "$0" "$bin/$script" 2>/dev/null; then 
+            fail="1"
+            echo "$(Name): $bin/$script: Failed to copy the bash script file." >&2
+            break   
+        fi
+        echo "Copied the bash script file." 
+        Clean "$bin/$script" "755" || fail="1"
+        break;
+    done
+
+    while [[ doPage -ne 0 ]]; do
+        if HelpCommand "cmp -s \"$man/$page\""; then
+            echo "$(Name): The man page and the file $man/$page are identical (not written)." >&2
+            Clean "$man/$page" || fail="1"
+            break
+        fi
+        if [[ ! -d $man ]] && ! mkdir -p "$man" 2>/dev/null; then 
+            fail="1"
+            echo "$(Name): $man: Failed to create the directory." >&2
+            break   
+        fi
+        if ! HelpCommand "cat >$man/$page 2>/dev/null"; then 
+            fail="1"
+            echo "$(Name): $man/$page: Failed to write the man page file." >&2
+            break   
+        fi
+        echo "Wrote the man page file." 
+        Clean "$man/$page" || fail="1"
+        break;
+    done
+
+    if [[ fail -ne 0 ]]; then
+        [[ ! /dev/fd/1 -ef /dev/fd/2 ]] && echo "Installation failed."
+        echo "$(Name): Installation failed." >&2
+        ExitFatal
+    fi            
+    echo "Installation succeeded."
+    ExitOK
+}
+
 ResetOptions() {
     local "option" "options=${1:-abcdefimrstx}"
     local -i "i"
@@ -213,7 +364,7 @@ GetOptions() {
     local "opt"
     let "OPTIND = 1"
     let "OPTERR = 0"
-    while getopts ":AR:a:bc:defhimprst:vx" opt "$@"; do
+    while getopts ":AR:a:bc:defhimprst:vxz:" opt "$@"; do
 #       echo "opt=$opt OPTIND=$OPTIND OPTARG=$OPTARG OPTERR=$OPTERR" >&2
         case $opt in
         A)  ResetOptions;;
@@ -227,12 +378,13 @@ GetOptions() {
         h)  Help;;
         i)  ;;
         m)  let "NoSeparator = 1";;
-        p)  "$0" -h | less; ExitOK;;
+        p)  Help "2";;
         r)  let "UseColor = 1";;
         s)  let "ShowTime = 1";;
         t)  GetInteger "MaximumPartitions" "128" "4294967295";;
         v)  NameAndVersion;;
         x)  let "UsePrefix = 1";;
+        z)  Install "$@";;
         \?) #echo "Invalid option: -$OPTARG" >&2
             echo "$(Name): Illegal option: $OPTARG" >&2
             ExitFatal;;
@@ -311,7 +463,7 @@ ReadValues() {
     if [[ i -ne Keys ]]; then
         echo "$(Name): This script is incompatible with the current version of macOS." >&2
         ExitFatal
-    elif Exists "Error"; then
+    elif "Exists" "Error"; then
         echo "$(Name): $ErrorMessage" >&2
         if "Sge" "0" "$ErrorExitCode" || "Sge" "$ErrorExitCode" "256"; then
             ExitFatal
@@ -567,7 +719,7 @@ DriveInfo() {
         if ! [[ -t 1 ]]; then
             #echo "Redirecting or piping caused the r option to be ignored." >&2
             let "UseColor = 0"
-        elif False && [[ $TERM != "xterm-256color" ]]; then # Skip since color always seems to work.
+        elif false && [[ $TERM != "xterm-256color" ]]; then # Skip since color always seems to work.
             echo "The $TERM terminal type caused the r option to be ignored." >&2
             let "UseColor = 0"
         fi
@@ -715,7 +867,7 @@ DriveInfo() {
 
                 Index="${Slice/\/dev\/$1s/}"
                 printf -v "Priority" "B%0*s" "$SliceLength" "$Index"
-        #       if ! "Exists" "SliceMountPoint" || [[ -z $SliceMountPoint ]] || ! Exists "SliceVolumeName"; then
+        #       if ! "Exists" "SliceMountPoint" || [[ -z $SliceMountPoint ]] || ! "Exists" "SliceVolumeName"; then
         #           SliceVolumeName=""
         #       fi
 
@@ -930,4 +1082,27 @@ DriveInfo() {
     return "0"
 }
 DriveInfo "$@"
+#
+# Notes:
+#
+# export MAN2RTF='\f0\fmodern\fcharset0 Courier;\f1\fmodern\fcharset0 Arial-Bold;'
+# export MAN2RTF='\f0\fmodern\fcharset0 Arial;\f1\fmodern\fcharset0 Arial-Bold;'
+#
+# textutil -convert html diskinfo.rtf
+#
+# groff -Tascii -man driveinfo.8 | less
+# man groff_mdoc
+#
+# /usr/local/bin
+# /usr/local/man/man8
+# /usr/share/man
+#
+# export MANPATH="$MANPATH:/usr/local/man"
+#
+# /private/etc/manpaths
+# /usr/share/man
+# /usr/local/share/man
+#
+# ditto --hfsCompression [src] [dst]
+# afscexpand can be used to decompress files in place
 #947bcefd

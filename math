@@ -457,6 +457,14 @@ Ssed() {
     echo "$r"
 }
 
+Supper() {
+    tr "[:lower:]" "[:upper:]" <<<"$1"
+}
+
+Slower() {
+    tr "[:upper:]" "[:lower:]" <<<"$1"
+}
+
 ####################### Conversion ##############################################
 
 BlocksToBytes() {
