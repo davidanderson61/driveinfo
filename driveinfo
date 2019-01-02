@@ -2,7 +2,7 @@
 #
 # driveinfo - Gets detailed information about a drive.
 #
-# Copyright (c) 2018 David M. Anderson
+# Copyright (c) 2018-2019 David M. Anderson
 #
 # Distributed under the terms of the GNU General Public
 # License (GPL) version 3 (GPLv3) or (at your option) any later version.
@@ -100,9 +100,9 @@ Include()
 {
     local "file=$1"
     shift "1"
-    if [[ -f $(SourcePath)/$file ]]; then 
-        source "$(SourcePath)/$file" 
-    elif [[ -f ./$file ]]; then 
+    if [[ -f $(SourcePath)/$file ]]; then
+        source "$(SourcePath)/$file"
+    elif [[ -f ./$file ]]; then
         source "./$file"
     elif "Exists" "DRIVEINFO_INCLUDE" && [[ -f $DRIVEINFO_INCLUDE/$file ]]; then
         source "$DRIVEINFO_INCLUDE/$file"
@@ -207,10 +207,10 @@ Help()
     ExitOK
 }
 
-Clean() 
+Clean()
 {
     local "file=$1" "modes=${2:-644}" "groups=$(id -Gn)"
-    local "owner_group=${3:-$USER:${groups/%\ */}}" 
+    local "owner_group=${3:-$USER:${groups/%\ */}}"
     local -i "fail=0"
     if ! chflags 0 "$file" 2>/dev/null; then
         fail="1"
@@ -252,7 +252,7 @@ Install()
 #        fi
 #    fi
     local "yn" "files" "bin=/usr/local/bin" "script=$(Application)"
-    local "man=/usr/local/share/man/man8" "page=$(Application).8" 
+    local "man=/usr/local/share/man/man8" "page=$(Application).8"
     local -i "i" "doCommand=0" "doPage=0" "fail=0"
     ValidateArgument "$OPTARG"
     for (( i=0; i<${#OPTARG}; i++ )); do
@@ -275,7 +275,7 @@ Install()
         read yn
         if [[ $yn != Y* && $yn != y* ]]; then
             echo "$(Name): No files were installed." >&2
-            ExitFatal; 
+            ExitFatal;
         fi
     fi
 
@@ -290,17 +290,17 @@ Install()
             Clean "$bin/$script" "755" || fail="1"
             break;
         fi
-        if [[ ! -d $bin ]] && ! mkdir -p "$bin" 2>/dev/null; then 
+        if [[ ! -d $bin ]] && ! mkdir -p "$bin" 2>/dev/null; then
             fail="1"
             echo "$(Name): $bin: Failed to create the directory." >&2
-            break   
+            break
         fi
-        if ! cp -fX "$0" "$bin/$script" 2>/dev/null; then 
+        if ! cp -fX "$0" "$bin/$script" 2>/dev/null; then
             fail="1"
             echo "$(Name): $bin/$script: Failed to copy the bash script file." >&2
-            break   
+            break
         fi
-        echo "Copied the bash script file." 
+        echo "Copied the bash script file."
         Clean "$bin/$script" "755" || fail="1"
         break;
     done
@@ -311,17 +311,17 @@ Install()
             Clean "$man/$page" || fail="1"
             break
         fi
-        if [[ ! -d $man ]] && ! mkdir -p "$man" 2>/dev/null; then 
+        if [[ ! -d $man ]] && ! mkdir -p "$man" 2>/dev/null; then
             fail="1"
             echo "$(Name): $man: Failed to create the directory." >&2
-            break   
+            break
         fi
-        if ! HelpCommand "cat >$man/$page 2>/dev/null"; then 
+        if ! HelpCommand "cat >$man/$page 2>/dev/null"; then
             fail="1"
             echo "$(Name): $man/$page: Failed to write the man page file." >&2
-            break   
+            break
         fi
-        echo "Wrote the man page file." 
+        echo "Wrote the man page file."
         Clean "$man/$page" || fail="1"
         break;
     done
@@ -330,7 +330,7 @@ Install()
         [[ ! /dev/fd/1 -ef /dev/fd/2 ]] && echo "Installation failed."
         echo "$(Name): Installation failed." >&2
         ExitFatal
-    fi            
+    fi
     echo "Installation succeeded."
     ExitOK
 }
@@ -1085,24 +1085,19 @@ DriveInfo "$@"
 #
 # Notes:
 #
+# Remove trailing whitespace:
+# sed 's/[[:blank:]]*$//' file | cat -vet -
+#
+# For man2rtf: (did not use)
 # export MAN2RTF='\f0\fmodern\fcharset0 Courier;\f1\fmodern\fcharset0 Arial-Bold;'
 # export MAN2RTF='\f0\fmodern\fcharset0 Arial;\f1\fmodern\fcharset0 Arial-Bold;'
 #
-# textutil -convert html diskinfo.rtf
-#
-# groff -Tascii -man driveinfo.8 | less
+# man driveinfo | man2rtf -u >driveinfo.rtf
+# change font to 14 pt.
+# textutil -convert html driveinfo.rtf
 # man groff_mdoc
-#
-# /usr/local/bin
-# /usr/local/man/man8
-# /usr/share/man
-#
 # export MANPATH="$MANPATH:/usr/local/man"
-#
-# /private/etc/manpaths
-# /usr/share/man
-# /usr/local/share/man
-#
 # ditto --hfsCompression [src] [dst]
 # afscexpand can be used to decompress files in place
-#947bcefd
+#
+#d6f81cdd

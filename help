@@ -2,7 +2,7 @@
 #
 # help - Gets manual for driveinfo.
 #
-# Copyright (c) 2018 David M. Anderson
+# Copyright (c) 2018-2019 David M. Anderson
 #
 # Distributed under the terms of the GNU General Public
 # License (GPL) version 3 (GPLv3) or (at your option) any later version.
@@ -31,7 +31,7 @@ HelpCommand() {
 .\"
 .\" $application.8 - This is the man page for $application.
 .\"
-.\" Copyright (c) 2018 David M. Anderson
+.\" Copyright (c) 2018-2019 David M. Anderson
 .\"
 .\" Distributed under the terms of the GNU General Public
 .\" License (GPL) version 3 (GPLv3) or (at your option) any later version.
@@ -52,8 +52,8 @@ HelpCommand() {
 .\"    You should have received a copy of the GNU General Public License
 .\"    along with $application.  If not, see <https://www.gnu.org/licenses/>.
 .\"
-.Dd December 22, 2018
-.Os
+.Dd January 2, 2019
+.Os "macOS"
 .Dt $APPLICATION 8
 .Sh NAME
 .Nm $application
@@ -61,16 +61,16 @@ HelpCommand() {
 .Sh SYNOPSIS
 .Nm
 .Op Fl A
-.Op Fl R Ar options-to-reset 
-.Op Fl a Ar byte-alignment 
-.Op Fl b 
-.Op Fl c Ar column-list 
-.Op Fl defhimprs 
-.Op Fl t Ar maximum-entries 
-.Op Fl vx 
-.Op Fl z Ar file-list 
-.Op Fl - 
-.Op Ar device 
+.Op Fl R Ar options-to-reset
+.Op Fl a Ar byte-alignment
+.Op Fl b
+.Op Fl c Ar column-list
+.Op Fl defhimprs
+.Op Fl t Ar maximum-entries
+.Op Fl vx
+.Op Fl z Ar file-list
+.Op Fl -
+.Op Ar device
 .Sh DESCRIPTION
 The
 .Nm
@@ -94,7 +94,7 @@ GPT on an operating system boot drive, unless System Integrity Protection
 .Nm
 command does not require disabling SIP
 and can produce the same basic tabular output as the
-.Xr gpt 8 
+.Xr gpt 8
 command.
 .Pp
 The options are applied as read from left to right and are as follows:
@@ -181,7 +181,7 @@ Signals the end of options and disables further option processing.
 .El
 .Sh DEVICES
 A device parameter can usually be any of the following:
-.Bl -bullet 
+.Bl -bullet
 .It
 The
 .Sy disk identifier
@@ -242,7 +242,7 @@ for
 .Xr diskutil 8 .
 .Sh COLUMNS
 Below is a list of information column types that can be output.
-The letters may appear as the argument to the c option. 
+The letters may appear as the argument to the c option.
 .Pp
 .Bl -tag -compact -width 16n
 .It b\ \ \ Begin:
@@ -359,12 +359,11 @@ from the command line.
 .Pp
 ${APPLICATION}_INCLUDE
 .Pp
-.\"45678901234567890123456789012345678901234567890123456789012345678901234567890
 The ${APPLICATION}_INCLUDE variable is only used during code development. Under
 normal usage, this variable is not accessed and can therefore be ignored. If
 the ${APPLICATION}_INCLUDE variable exists in the environment during code
-devolopment, then the directory stored in this variable may be searched for
-include files. 
+development, then the directory stored in this variable may be searched for
+include files.
 .Sh FILES
 The letters given below may appear as the argument to the z option. This
 option installs the
@@ -376,25 +375,10 @@ command into macOS. Note: Any existing files will be replaced.
 Copy the bash script to the
 .Pa /usr/local/bin/$application
 file.
-.\"
-.\"No check is made to determine if the
-.\".Pa /usr/local/bin
-.\"directory is included in the PATH environment variable. Further information
-.\"about the PATH environment variable can be found on the man page for
-.\".Xr bash 1 .
-.\"
 .It p
 Write the man page to the
 .Pa /usr/local/share/man/man8/$application.8
-file. 
-.\"
-.\"No check is made to determine if the
-.\".Pa /usr/local/share/man
-.\"directory is included in the MANPATH environment variable.
-.\"Further information about the MANPATH environment variable can be found on
-.\"the man page for
-.\".Xr man 1 .
-.\"
+file.
 .El
 .Sh EXAMPLES
 .Dl $application disk0
@@ -410,7 +394,7 @@ Replacement for the "sudo gpt -r show /dev/disk0" command.
 .Pp
 .Dl $application -a 4096 -r disk0
 Determine if the "A" and "S" error codes should be issued for partition
-entries. The argument value of 4096 bytes is the alignment requirment for
+entries. The argument value of 4096 bytes is the alignment requirement for
 proper operation of Apple_APFS, Apple_Boot, Apple_CoreStorage and
 Apple_HFS partitions.
 .Pp
@@ -475,4 +459,4 @@ END_OF_HELP_TEXT
 }
 #        1         2         3         4         5         6         7         8
 #2345678901234567890123456789012345678901234567890123456789012345678901234567890
-#2d3bf948
+#e9a9df02
