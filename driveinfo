@@ -34,7 +34,7 @@ set -u
 Application() { echo "driveinfo"; }
 Version() { echo "1.0.2"; }
 ExitOK() { exit "0"; }
-ExitFatal() { exit "${1:-1}"; }
+ExitFatal() { exit "${1:-2}"; }
 Name() {
     case 2 in
     1) echo "${BASH_SOURCE[0]##*/}";;
@@ -1100,4 +1100,4 @@ DriveInfo "$@"
 # ditto --hfsCompression [src] [dst]
 # afscexpand can be used to decompress files in place
 #
-#d6f81cdd
+#e64d9ea0

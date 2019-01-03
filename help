@@ -137,7 +137,8 @@ output is not directed to a terminal. This can be overridden by
 setting this flag.
 .\" ==========
 .It Fl h
-Display this help text, then quit. All previous options are ignored.
+Display this man page with overstriking suppressed, then quit. All
+previous options are ignored.
 .\" ==========
 .It Fl i
 Do not validate the source script. This option must occur before any
@@ -148,8 +149,8 @@ environment variable, otherwise this option will be ignored.
 Omit thousands separator.
 .\" ==========
 .It Fl p
-Pipe the help text to the less command, then quit. All previous
-options are ignored. This allows the help text to be viewed
+Pipe this man page to the less command, then quit. All previous
+options are ignored. This allows the man page to be viewed
 interactively.
 .\" ==========
 .It Fl r
@@ -459,4 +460,4 @@ END_OF_HELP_TEXT
 }
 #        1         2         3         4         5         6         7         8
 #2345678901234567890123456789012345678901234567890123456789012345678901234567890
-#e9a9df02
+#ede8eb16
