@@ -1,0 +1,641 @@
+<!-- Creator     : groff version 1.19.2 -->
+<!-- CreationDate: Fri Jan  4 16:56:57 2019 -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta name="generator" content="groff -Thtml, see www.gnu.org">
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<meta name="Content-Style" content="text/css">
+<style type="text/css">
+       p     { margin-top: 0; margin-bottom: 0; }
+       pre   { margin-top: 0; margin-bottom: 0; }
+       table { margin-top: 0; margin-bottom: 0; }
+</style>
+<title></title>
+</head>
+<body>
+
+<hr>
+
+
+<p valign="top">DRIVEINFO(8) BSD System Manager&rsquo;s
+Manual DRIVEINFO(8)</p>
+
+<p style="margin-top: 1em" valign="top"><b>NAME</b></p>
+
+<p style="margin-left:8%;"><b>driveinfo</b> &mdash; provide
+partition information for GPT drives</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>SYNOPSIS</b></p>
+
+<p style="margin-left:23%;"><b>driveinfo</b>
+[<b>&minus;A</b>]
+[<b>&minus;R&nbsp;</b><i>options-to-reset</i>]
+[<b>&minus;a&nbsp;</b><i>byte-alignment</i>]
+[<b>&minus;b</b>] [<b>&minus;c&nbsp;</b><i>column-list</i>]
+[<b>&minus;defhimprs</b>]
+[<b>&minus;t&nbsp;</b><i>maximum-entries</i>]
+[<b>&minus;vx</b>] [<b>&minus;z&nbsp;</b><i>file-list</i>]
+[<b>&minus;&minus;</b>] [<i>device</i>]</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>DESCRIPTION</b></p>
+
+<p style="margin-left:8%;">The <b>driveinfo</b> command
+gets detailed information about a specific drive. The script
+parses property lists emitted by the diskutil(8) command to
+compile the information. If the drive contains a GUID
+Partition Table (GPT), then detailed information about each
+partition is also included in a tabular form. This also
+allows free space on a drive, using a GPT, to be
+identified.</p>
+
+<p style="margin-left:8%; margin-top: 1em">The gpt(8)
+command can be used to view the actual stored GPT values in
+in a tabular form. Starting with macOS, the gpt(8) command
+can no longer read the GPT on an operating system boot
+drive, unless System Integrity Protection (SIP) is disabled.
+The <b>driveinfo</b> command does not require disabling SIP
+and can produce the same basic tabular output as the gpt(8)
+command.</p>
+
+<p style="margin-left:8%; margin-top: 1em">The options are
+applied as read from left to right and are as follows:</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>&minus;A</b></p>
+
+<p style="margin-left:15%; margin-top: 1em">Reset to the
+default all options. This option is the same as entering the
+<b>&minus;R</b> <i>abcdefimrstx</i> option.</p>
+
+<p style="margin-top: 1em" valign="top"><b>&minus;R</b>
+<i>options-to-reset</i></p>
+
+<p style="margin-left:15%;">Reset to the default value any
+options given as the argument.</p>
+
+<p style="margin-top: 1em" valign="top"><b>&minus;a</b>
+<i>byte-alignment</i></p>
+
+<p style="margin-left:15%;">Set the byte alignment value
+used to determine if the &quot;A&quot; and &quot;S&quot;
+error codes should be issued. The default is to never issue
+either code. Normally, the byte alignment value should be a
+power of 2 greater than the logical sector size.</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>&minus;b</b></p>
+
+<p style="margin-left:15%; margin-top: 1em">Display blocks
+instead of bytes. Each block is equal to the logical sector
+size in bytes.</p>
+
+<p style="margin-top: 1em" valign="top"><b>&minus;c</b>
+<i>column-list</i></p>
+
+<p style="margin-left:15%;">Specify which columns to
+display. Each character in the argument represents a column
+type. The list of possible column types is given in the
+COLUMNS section. The default is to display the
+&quot;cstimn&quot; column types.</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>&minus;d</b></p>
+
+<p style="margin-left:15%; margin-top: 1em">Omit the
+header.</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>&minus;e</b></p>
+
+<p style="margin-left:15%; margin-top: 1em">Omit the
+table.</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>&minus;f</b></p>
+
+<p style="margin-left:15%; margin-top: 1em">Force use of
+color. Color sequences are normally disabled if the output
+is not directed to a terminal. This can be overridden by
+setting this flag.</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>&minus;h</b></p>
+
+<p style="margin-left:15%; margin-top: 1em">Display this
+man page with overstriking suppressed, then quit. All
+previous options are ignored.</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>&minus;i</b></p>
+
+<p style="margin-left:15%; margin-top: 1em">Do not validate
+the source script. This option must occur before any other
+options both on the command line and in the
+DRIVEINFO_OPTIONS environment variable, otherwise this
+option will be ignored.</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>&minus;m</b></p>
+
+<p style="margin-left:15%; margin-top: 1em">Omit thousands
+separator.</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>&minus;p</b></p>
+
+<p style="margin-left:15%; margin-top: 1em">Pipe this man
+page to the less command, then quit. All previous options
+are ignored. This allows the man page to be viewed
+interactively.</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>&minus;r</b></p>
+
+<p style="margin-left:15%; margin-top: 1em">Enable
+colorized output. ANSI escape codes are used to highlight
+free space and entries with error codes. No attempt is made
+to determine if the ANSI escape codes are compatible with
+the current terminal.</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>&minus;s</b></p>
+
+<p style="margin-left:15%; margin-top: 1em">Display
+execution times. This option is for diagnostic purposes.</p>
+
+<p style="margin-top: 1em" valign="top"><b>&minus;t</b>
+<i>maximum-entries</i></p>
+
+<p style="margin-left:15%;">Set the maximum number of
+partition entries allowed in GPT. This option should not be
+used unless the user knows the GPT was created with more
+than the default of 128 possible entries.</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>&minus;v</b></p>
+
+<p style="margin-left:15%; margin-top: 1em">Display the
+version, then quit. All previous options are ignored.</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>&minus;x</b></p>
+
+<p style="margin-left:15%; margin-top: 1em">Add a metric
+prefix to the values.</p>
+
+<p style="margin-top: 1em" valign="top"><b>&minus;z</b>
+<i>file-list</i></p>
+
+<p style="margin-left:15%;">Install the files associated
+with this command, then quit. All previous options are
+ignored. Each character in the argument represents a file
+type. The list of possible file types is given in the FILES
+section.</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>&minus;&minus;</b></p>
+
+<p style="margin-left:15%; margin-top: 1em">Signals the end
+of options and disables further option processing.</p>
+
+<p style="margin-top: 1em" valign="top"><b>DEVICES</b></p>
+
+<p style="margin-left:8%;">A device parameter can usually
+be any of the following:</p>
+
+<p style="margin-top: 1em" valign="top"><b>&bull;</b></p>
+
+<p style="margin-left:14%;">The <b>disk identifier</b> (see
+below) of a drive with a GPT. Any entry of the form of
+<i>diskU</i>, where U is zero or a positive decimal integer,
+e.g. <i>disk0</i>.</p>
+
+<p style="margin-top: 1em" valign="top"><b>&bull;</b></p>
+
+<p style="margin-left:14%;">The device node entry
+containing the <b>disk identifier</b> of a drive with a GPT.
+Any entry of the form of <i>/dev/[r]diskU</i>, where U is
+zero or a positive decimal integer, e.g.
+<i>/dev/disk0</i>.</p>
+
+<p style="margin-left:8%; margin-top: 1em">Further
+information about devices can be found on the man page for
+diskutil(8).</p>
+
+<p style="margin-top: 1em" valign="top"><b>DISK
+IDENTIFIER</b></p>
+
+<p style="margin-left:8%;">The (BSD) <b>disk identifier</b>
+string variously identifies a physical or logical device
+unit, a session (if any) upon that device, a slice
+(partition) upon that session (if any), or a virtual logical
+volume. In the context of this command, a <b>disk
+identifier</b> may take the form of <i>diskU</i> or
+<i>diskUsS</i>, where:</p>
+
+<p style="margin-top: 1em" valign="top"><b>&bull;</b></p>
+
+<p style="margin-left:14%;"><i>U</i> is the device unit
+represented by zero or a positive decimal integer (possibly
+multi-digit). It may refer to hardware (e.g. a hard drive,
+optical drive, or memory card) or a virtual
+&quot;drive&quot; constructed by software (e.g. an AppleRAID
+Set, disk image, CoreStorage LV, etc.).</p>
+
+<p style="margin-top: 1em" valign="top"><b>&bull;</b></p>
+
+<p style="margin-left:14%;"><i>S</i> is the slice
+(partition) represented by a positive decimal integer
+(possibly multi-digit). Upon this partition, the raw data
+that underlies a user-visible file system is usually
+present, but it may also contain specialized data for
+certain 3rd-party database programs, or data required for
+the system software (e.g. EFI partitions, booter partitions,
+APM partition map data, etc.), or, notably, it might contain
+backing-store physical volumes for AppleRAID, CoreStorage,
+APFS, or 3rd-party Storage Systems.</p>
+
+<p style="margin-left:8%; margin-top: 1em">Further
+information about <b>disk identifiers</b> can be found on
+the man page for diskutil(8).</p>
+
+<p style="margin-top: 1em" valign="top"><b>COLUMNS</b></p>
+
+<p style="margin-left:8%;">Below is a list of information
+column types that can be output. The letters may appear as
+the argument to the c option.</p>
+
+
+<p style="margin-top: 1em" valign="top">b&nbsp;&nbsp;&nbsp;Begin:</p>
+
+<p style="margin-left:35%; margin-top: 1em">Base zero
+beginning offset.</p>
+
+<p valign="top">c&nbsp;&nbsp;&nbsp;Code:</p>
+
+<p style="margin-left:35%; margin-top: 1em"><b>Error
+codes</b> (see below).</p>
+
+<p valign="top">e&nbsp;&nbsp;&nbsp;End:</p>
+
+<p style="margin-left:35%; margin-top: 1em">Base zero
+ending offset.</p>
+
+<p valign="top">f&nbsp;&nbsp;&nbsp;Format:</p>
+
+<p style="margin-left:35%; margin-top: 1em">Known or last
+known file system (user visible) name.</p>
+
+<p valign="top">i&nbsp;&nbsp;&nbsp;Identifier:</p>
+
+<p style="margin-left:35%; margin-top: 1em">Disk identifier
+of the partition (slice).</p>
+
+<p valign="top">m&nbsp;&nbsp;&nbsp;Mounted:</p>
+
+<p style="margin-left:35%; margin-top: 1em">Either
+&quot;Yes&quot; for a mounted partition, otherwise
+&quot;No&quot;.</p>
+
+<p valign="top">n&nbsp;&nbsp;&nbsp;Name:</p>
+
+<p style="margin-left:35%; margin-top: 1em">Known or last
+known volume label.</p>
+
+<p valign="top">p&nbsp;&nbsp;&nbsp;Personality:</p>
+
+<p style="margin-left:35%; margin-top: 1em">Known or last
+known file system personality name.</p>
+
+<p valign="top">s&nbsp;&nbsp;&nbsp;Size:</p>
+
+<p style="margin-left:35%; margin-top: 1em">If Ending &lt;
+Beginning, then wrapping is assumed.</p>
+
+<p valign="top">t&nbsp;&nbsp;&nbsp;Type:</p>
+
+<p style="margin-left:35%; margin-top: 1em"><b>Entry
+type</b> (see below).</p>
+
+<p style="margin-top: 1em" valign="top"><b>ENTRY
+TYPES</b></p>
+
+<p style="margin-left:8%;">Below is a list of <b>entry
+types</b> that reserve storage for partitioning
+information.</p>
+
+<p style="margin-top: 1em" valign="top">PMBR</p>
+
+<p style="margin-left:38%; margin-top: 1em">Protective
+Master Boot Record</p>
+
+<p valign="top">Pri GPT header</p>
+
+<p style="margin-left:38%; margin-top: 1em">Primary GUID
+Partition Table header</p>
+
+<p valign="top">Pri GPT table</p>
+
+<p style="margin-left:38%; margin-top: 1em">Primary GUID
+Partition Table array</p>
+
+<p valign="top">Sec GPT header</p>
+
+<p style="margin-left:38%; margin-top: 1em">Secondary
+(Backup) GUID Partition Table header</p>
+
+<p valign="top">Sec GPT table</p>
+
+<p style="margin-left:38%; margin-top: 1em">Secondary
+(Backup) GUID Partition Table array</p>
+
+<p style="margin-left:8%; margin-top: 1em">Below is a list
+of <b>entry types</b> and GUIDs for common partitions. This
+is not a complete list.</p>
+
+<p style="margin-top: 1em" valign="top">Apple_APFS</p>
+
+
+<p style="margin-left:48%; margin-top: 1em">7C3457EF-0000-11AA-AA11-00306543ECAC</p>
+
+<p valign="top">Apple_Boot</p>
+
+
+<p style="margin-left:48%; margin-top: 1em">426F6F74-0000-11AA-AA11-00306543ECAC</p>
+
+<p valign="top">Apple_CoreStorage</p>
+
+
+<p style="margin-left:48%; margin-top: 1em">53746F72-6167-11AA-AA11-00306543ECAC</p>
+
+<p valign="top">Apple_HFS</p>
+
+
+<p style="margin-left:48%; margin-top: 1em">48465300-0000-11AA-AA11-00306543ECAC</p>
+
+<p valign="top">Bios Boot Partition</p>
+
+
+<p style="margin-left:48%; margin-top: 1em">21686148-6449-6E6F-744E-656564454649</p>
+
+<p valign="top">EFI</p>
+
+
+<p style="margin-left:48%; margin-top: 1em">C12A7328-F81F-11D2-BA4B-00A0C93EC93B</p>
+
+<p valign="top">Linux Filesystem</p>
+
+
+<p style="margin-left:48%; margin-top: 1em">0FC63DAF-8483-4772-8E79-3D69D8477DE4</p>
+
+<p valign="top">Linux LVM</p>
+
+
+<p style="margin-left:48%; margin-top: 1em">E6D6D379-F507-44C2-A23C-238F2A3DF928</p>
+
+<p valign="top">Linux Swap</p>
+
+
+<p style="margin-left:48%; margin-top: 1em">0657FD6D-A4AB-43C4-84E5-0933C84B4F4F</p>
+
+<p valign="top">Microsoft Basic Data</p>
+
+
+<p style="margin-left:48%; margin-top: 1em">EBD0A0A2-B9E5-4433-87C0-68B6B72699C7</p>
+
+<p valign="top">Microsoft Reserved</p>
+
+
+<p style="margin-left:48%; margin-top: 1em">E3C9E316-0B5C-4DB8-817D-F92DF00215AE</p>
+
+<p valign="top">Windows Recovery</p>
+
+
+<p style="margin-left:48%; margin-top: 1em">DE94BBA4-06D1-4D40-A16A-BFD50179D6AC</p>
+
+<p style="margin-top: 1em" valign="top"><b>ERROR
+CODES</b></p>
+
+<p style="margin-left:8%;">These letters may appear in the
+&quot;Code&quot; column.</p>
+
+<p style="margin-top: 1em" valign="top">A</p>
+
+<p style="margin-left:14%; margin-top: 1em">The
+&quot;Begin&quot; value is not a multiple of the
+byte-alignment value. This check only performed on partition
+entries.</p>
+
+<p valign="top">I</p>
+
+<p style="margin-left:14%; margin-top: 1em">One or more
+values are invalid. A value is invalid, if at least one of
+the three following conditions occurs. First, the
+&quot;Begin&quot; value is greater than the &quot;End&quot;
+value. Second, the &quot;Begin&quot; block value is greater
+than or equal to the number of sectors. Third, the
+&quot;End&quot; block value is greater than or equal to the
+number of sectors.</p>
+
+<p valign="top">O</p>
+
+<p style="margin-left:14%; margin-top: 1em">The entry
+overlaps another entry. There is overlap, if at least one of
+the two following conditions occurs. First, the
+&quot;End&quot; value is greater than or equal to the
+&quot;Begin&quot; value of the next entry. Second, the entry
+is not last and the &quot;Begin&quot; value greater than the
+&quot;End&quot; value.</p>
+
+<p valign="top">S</p>
+
+<p style="margin-left:14%; margin-top: 1em">The
+&quot;Size&quot; value is not a multiple of the
+byte-alignment value. This check only performed on partition
+entries.</p>
+
+<p style="margin-top: 1em" valign="top"><b>COLORS</b> <br>
+Red</p>
+
+<p style="margin-left:20%; margin-top: 1em">The entry
+contains one or more error codes.</p>
+
+<p valign="top">Green</p>
+
+<p style="margin-left:20%; margin-top: 1em">The entry
+represents free space on the drive.</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>ENVIRONMENT</b></p>
+
+<p style="margin-left:8%;">The following environment
+variable affects the execution of <b>driveinfo</b>:</p>
+
+
+<p style="margin-left:8%; margin-top: 1em">DRIVEINFO_OPTIONS</p>
+
+<p style="margin-left:8%; margin-top: 1em">If the
+DRIVEINFO_OPTIONS variable exists in the environment, then
+the options are read from this variable, before reading any
+additional options from the command line.</p>
+
+
+<p style="margin-left:8%; margin-top: 1em">DRIVEINFO_INCLUDE</p>
+
+<p style="margin-left:8%; margin-top: 1em">The
+DRIVEINFO_INCLUDE variable is only used during code
+development. Under normal usage, this variable is not
+accessed and can therefore be ignored. If the
+DRIVEINFO_INCLUDE variable exists in the environment during
+code development, then the directory stored in this variable
+may be searched for include files.</p>
+
+<p style="margin-top: 1em" valign="top"><b>FILES</b></p>
+
+<p style="margin-left:8%;">The letters given below may
+appear as the argument to the z option. This option installs
+the <b>driveinfo</b> command into macOS. Note: Any existing
+files will be replaced.</p>
+
+<p style="margin-top: 1em" valign="top">c</p>
+
+<p style="margin-left:14%; margin-top: 1em">Copy the bash
+script to the <i>/usr/local/bin/driveinfo</i> file.</p>
+
+<p valign="top">p</p>
+
+<p style="margin-left:14%; margin-top: 1em">Write the man
+page to the <i>/usr/local/share/man/man8/driveinfo.8</i>
+file.</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>EXAMPLES</b></p>
+
+<p style="margin-left:17%;">driveinfo disk0</p>
+
+<p style="margin-left:8%;">If the DRIVEINFO_OPTIONS
+variable is defined, then the options are read from this
+variable before displaying the information for disk0.</p>
+
+<p style="margin-left:17%; margin-top: 1em">driveinfo -A
+disk0</p>
+
+<p style="margin-left:8%;">Ignore the DRIVEINFO_OPTIONS
+variable and display the default information for disk0.</p>
+
+<p style="margin-left:17%; margin-top: 1em">driveinfo
+-Abdmc bsit /dev/disk0</p>
+
+<p style="margin-left:8%;">Replacement for the &quot;sudo
+gpt -r show /dev/disk0&quot; command.</p>
+
+<p style="margin-left:17%; margin-top: 1em">driveinfo -a
+4096 -r disk0</p>
+
+<p style="margin-left:8%;">Determine if the &quot;A&quot;
+and &quot;S&quot; error codes should be issued for partition
+entries. The argument value of 4096 bytes is the alignment
+requirement for proper operation of Apple_APFS, Apple_Boot,
+Apple_CoreStorage and Apple_HFS partitions.</p>
+
+<p style="margin-left:17%; margin-top: 1em">driveinfo -r
+disk0</p>
+
+<p style="margin-left:8%;">Use color to highlight free
+space and entries with error codes.</p>
+
+<p style="margin-left:17%; margin-top: 1em">driveinfo -R bd
+disk0</p>
+
+<p style="margin-left:8%;">Reset b and d options, if
+specified in the DRIVEINFO_OPTIONS variable.</p>
+
+<p style="margin-left:17%; margin-top: 1em">driveinfo -z
+cp</p>
+
+<p style="margin-left:8%;">Install this command. See the
+FILES section for more information.</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>DIAGNOSTICS</b></p>
+
+<p style="margin-left:8%;">Problems found with entries in
+(GPT) are flagged by letters appearing in the
+&quot;Code&quot; column of the table.</p>
+
+<p style="margin-left:8%; margin-top: 1em">The s option can
+be used to determine the execution times of the script. This
+options verifies that a majority of the time is spent
+waiting for the diskutil(8) command to return property
+lists.</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>COMPATIBILITY</b></p>
+
+<p style="margin-left:8%;">At the time of this writing,
+<b>driveinfo</b> found to be compatible with High Sierra
+(macOS 10.13) and newer versions of macOS.</p>
+
+<p style="margin-top: 1em" valign="top"><b>EXIT
+STATUS</b></p>
+
+<p style="margin-left:8%;">An value of 0 is returned to
+indicate success. A value of 2 is returned, if the script
+determines a error condition. Otherwise, any exit code,
+found in a diskutil(8) property list, will be the returned
+exit status of the script.</p>
+
+
+<p style="margin-top: 1em" valign="top"><b>VALIDATION</b></p>
+
+<p style="margin-left:8%;">Normally, a CRC32 validation is
+preformed on the source script. This can be disabled with
+the i option. If the script is deliberately modified, then
+the hexadecimal value given in the error message should be
+used to replace the value at the end of the script. This
+value should be followed by a newline.</p>
+
+<p style="margin-top: 1em" valign="top"><b>SEE ALSO</b></p>
+
+<p style="margin-left:8%;">diskutil(8), gpt(8)</p>
+
+<p style="margin-top: 1em" valign="top"><b>HISTORY</b></p>
+
+<p style="margin-left:8%;">The <b>driveinfo</b> utility is
+not part of macOS. The first downloadable version appeared
+in December of 2018.</p>
+
+<p style="margin-top: 1em" valign="top"><b>VERSION</b></p>
+
+<p style="margin-left:8%;">This documentation is current
+for version 1.0.3 of <b>driveinfo</b>.</p>
+
+<p style="margin-top: 1em" valign="top"><b>BUGS</b></p>
+
+<p style="margin-left:8%;">The tabular information is only
+produced for drives with a GPT.</p>
+
+<p style="margin-left:8%; margin-top: 1em">The default
+maximum number of partition entries allowed in GPT is
+assumed to be 128. While this is a fairly safe assumption,
+if the actual value is different, then this utility will not
+know unless set by the t option.</p>
+
+<p style="margin-top: 1em" valign="top"><b>AUTHOR</b></p>
+
+<p style="margin-left:8%;"><b>driveinfo</b> was written by
+David M. Anderson.</p>
+
+<p style="margin-left:8%; margin-top: 1em">Support and
+development are available at <br>
+https://sourceforge.net/projects/driveinfo/</p>
+
+<p style="margin-left:8%; margin-top: 1em">macOS
+January&nbsp;4, 2019 macOS</p>
+<hr>
+</body>
+</html>

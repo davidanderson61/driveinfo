@@ -1,11 +1,67 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    <title></title>
+    <title>The macOS driveinfo Command</title>
     <link rel="stylesheet" type="text/css" href="StyleSheet.css" />
 </head>
 <body>
-    <h6>
-        Hi there!</h6>
+    <h6>The macOS driveinfo Command
+    </h6>
+    <p>Last Web page update: 1/4/2019, referencing driveinfo version 1.0.3</p>
+    <p>
+        The <a href="driveinfo.html">driveinfo man page</a> provides most of the information
+        needed to use this command. There also is a
+        <a href="driveinfo_html.html">HTML version of the man page</a> which auto wraps the text.
+        This page discusses addition information not contained in either man page.
+    </p>
+    <p>
+        A summary, including key features of driveinfo, can be found at the 
+        <a href="https://sourceforge.net/projects/driveinfo/">SourceForge driveinfo homepage</a>.
+        The releases of driveinfo can be found at the
+        <a href="https://sourceforge.net/projects/driveinfo/files/">SourceForge driveinfo files page</a>.
+        An automatic download of the latest release can be started by accessing this
+        <a href="https://sourceforge.net/projects/driveinfo/files/latest/download">SourceForge download link</a>.
+        The driveinfo download is in the form a zip file.
+        This file is automatically expanded to create a folder.
+        The download does not automatically install.
+        The driveinfo command does not need to be installed before using.
+        Assuming the zip file was downloaded to the
+        <span class="code">~/Downloads</span> folder,
+        driveinfo can be run by typing the following command along with the desired parameters.
+    </p>
+    <h5>~/Downloads/driveinfo-1.0.3/driveinfo</h5>
+    <p>
+        If you wish to install, then enter the following. This will install both the command
+        and the corresponding man page.
+    </p>
+    <h5>sudo ~/Downloads/driveinfo-1.0.3/driveinfo -zcp</h5>
+    <p>After installing, the follow files should have been created or verified.</p>
+    <h5>/usr/local/bin/driveinfo<br />
+        /usr/local/share/man/man8/driveinfo.8<br />
+    </h5>
+    <p>The following commands can be used to uninstall driveinfo.</p>
+    <h5>sudo rm /usr/local/bin/driveinfo<br />
+        sudo rm /usr/local/share/man/man8/driveinfo.8<br />
+        sudo /usr/libexec/makewhatis /usr/local/share/man
+    </h5>
+    <p>
+        The driveinfo command is a bash script. This script verifies itself
+        by performing a 32 bit cyclic redundancy check (CRC32).
+        If modifications are made to the script, then an error message
+        with the new CRC32 value will be produced.
+        This error message can be eliminated by using the <span class="code">i</span>
+        option or replacing the CRC32 value at the end of the script.
+        The <span class="code">i</span> option can also be placed in the DRIVEINFO_OPTIONS
+        environment variable.
+    </p>
+    <p>
+        The driveinfo source git repository contains the script files <span class="code">driveinfo</span>,
+        <span class="code">math</span> and <span class="code">help</span>. Both the
+        <span class="code">math</span> and <span class="code">help</span> files are merged into
+        the <span class="code">driveinfo</span> file to create the released single
+        <span class="code">driveinfo</span> file. The git repository can be accessed from either
+        <a href="https://sourceforge.net/p/driveinfo/code/ci/master/tree/">SourceForge</a> or 
+        <a href="https://github.com/davidanderson61/driveinfo">GitHub</a>.
+    </p>
 </body>
 </html>

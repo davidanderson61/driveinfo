@@ -32,7 +32,7 @@ fi
 set -u
 
 Application() { echo "driveinfo"; }
-Version() { echo "1.0.2"; }
+Version() { echo "1.0.3"; }
 ExitOK() { exit "0"; }
 ExitFatal() { exit "${1:-2}"; }
 Name() {
@@ -214,27 +214,27 @@ Clean()
     local -i "fail=0"
     if ! chflags 0 "$file" 2>/dev/null; then
         fail="1"
-        echo "$(Name): $file: Failed to remove file flags." >&2
+        echo "$(Name): $file: An error occurred while removing the file flags." >&2
     fi
     if ! chmod -N "$file" 2>/dev/null; then
         fail="1"
-        echo "$(Name): $file: Failed to remove Access Control Lists." >&2
+        echo "$(Name): $file: An error occurred while removing the Access Control Lists." >&2
     fi
     if ! chmod "$modes" "$file"  2>/dev/null; then
         fail="1"
-        echo "$(Name): $file: Failed to change file mode bits to $modes." >&2
+        echo "$(Name): $file: An error occurred while changing the file mode bits to $modes." >&2
     fi
     if ! xattr -c "$file"  2>/dev/null; then
         fail="1"
-        echo "$(Name): $file: Failed to remove all extended attributes." >&2
+        echo "$(Name): $file: An error occurred while removing all extended attributes." >&2
     fi
     if ! chown "$owner_group" "$file"  2>/dev/null; then
         fail="1"
-        echo "$(Name): $file: Failed to change the access and modification times." >&2
+        echo "$(Name): $file: An error occurred while changing the access and modification times." >&2
     fi
     if ! touch -acfm "$file"  2>/dev/null; then
         fail="1"
-        echo "$(Name): $file: Failed to change file owner and group to $owner_group." >&2
+        echo "$(Name): $file: An error occurred while changing the file owner and group to $owner_group." >&2
     fi
     return "$fail"
 }
@@ -252,7 +252,8 @@ Install()
 #        fi
 #    fi
     local "yn" "files" "bin=/usr/local/bin" "script=$(Application)"
-    local "man=/usr/local/share/man/man8" "page=$(Application).8"
+    local "man=/usr/local/share/man" "page=$(Application).8"
+    local "manN=$man/man8"
     local -i "i" "doCommand=0" "doPage=0" "fail=0"
     ValidateArgument "$OPTARG"
     for (( i=0; i<${#OPTARG}; i++ )); do
@@ -265,7 +266,7 @@ Install()
     done
 
     [[ doCommand -ne 0 ]] && files+="This bash script will be installed to the $bin/$script file.\n"
-    [[ doPage -ne 0 ]] && files+="The man page will be installed to the $man/$page\nfile.\n"
+    [[ doPage -ne 0 ]] && files+="The man page will be installed to the $manN/$page\nfile.\n"
     if [[ -n $files ]]; then
         if [[ $UID != 0 ]]; then
            echo "$(Name): The z option requires running as root user (or using sudo)." >&2
@@ -292,12 +293,12 @@ Install()
         fi
         if [[ ! -d $bin ]] && ! mkdir -p "$bin" 2>/dev/null; then
             fail="1"
-            echo "$(Name): $bin: Failed to create the directory." >&2
+            echo "$(Name): $bin: A error occurred while creating the directory." >&2
             break
         fi
         if ! cp -fX "$0" "$bin/$script" 2>/dev/null; then
             fail="1"
-            echo "$(Name): $bin/$script: Failed to copy the bash script file." >&2
+            echo "$(Name): $bin/$script: A error occurred while copying the bash script file." >&2
             break
         fi
         echo "Copied the bash script file."
@@ -306,25 +307,29 @@ Install()
     done
 
     while [[ doPage -ne 0 ]]; do
-        if HelpCommand "cmp -s \"$man/$page\""; then
-            echo "$(Name): The man page and the file $man/$page are identical (not written)." >&2
-            Clean "$man/$page" || fail="1"
+        if HelpCommand "cmp -s \"$manN/$page\""; then
+            echo "$(Name): The man page and the file $manN/$page are identical (not written)." >&2
+            Clean "$manN/$page" || fail="1"
             break
         fi
-        if [[ ! -d $man ]] && ! mkdir -p "$man" 2>/dev/null; then
+        if [[ ! -d $manN ]] && ! mkdir -p "$manN" 2>/dev/null; then
             fail="1"
-            echo "$(Name): $man: Failed to create the directory." >&2
+            echo "$(Name): $manN: A error occurred while creating the directory." >&2
             break
         fi
-        if ! HelpCommand "cat >$man/$page 2>/dev/null"; then
+        if ! HelpCommand "cat >$manN/$page 2>/dev/null"; then
             fail="1"
-            echo "$(Name): $man/$page: Failed to write the man page file." >&2
+            echo "$(Name): $manN/$page: A error occurred while writing the man page file." >&2
             break
         fi
         echo "Wrote the man page file."
-        Clean "$man/$page" || fail="1"
+        Clean "$manN/$page" || fail="1"
         break;
     done
+    if [[ doPage -ne 0 ]] && ! /usr/libexec/makewhatis "$man" 2>/dev/null; then
+        fail="1"
+        echo "$(Name): $man/whatis: A error occurred while updating the whatis database." >&2
+    fi
 
     if [[ fail -ne 0 ]]; then
         [[ ! /dev/fd/1 -ef /dev/fd/2 ]] && echo "Installation failed."
@@ -1095,9 +1100,10 @@ DriveInfo "$@"
 # man driveinfo | man2rtf -u >driveinfo.rtf
 # change font to 14 pt.
 # textutil -convert html driveinfo.rtf
+# groff -T html -mandoc /usr/local/share/man/man8/driveinfo.8 >driveinfo_html.html
 # man groff_mdoc
 # export MANPATH="$MANPATH:/usr/local/man"
 # ditto --hfsCompression [src] [dst]
 # afscexpand can be used to decompress files in place
 #
-#e64d9ea0
+#fe70236d

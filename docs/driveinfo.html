@@ -1,0 +1,314 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="1561.6">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; line-height: 14.0px; font: 14.0px Courier; min-height: 17.0px}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; line-height: 14.0px; font: 14.0px Courier}
+    span.s1 {text-decoration: underline}
+  </style>
+</head>
+<body>
+<p class="p1"><br></p>
+<p class="p2">DRIVEINFO(8)<span class="Apple-converted-space">              </span>BSD System Manager’s Manual <span class="Apple-converted-space">            </span>DRIVEINFO(8)</p>
+<p class="p1"><br></p>
+<p class="p2"><b>NAME</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>driveinfo </b>-- provide partition information for GPT drives</p>
+<p class="p1"><br></p>
+<p class="p2"><b>SYNOPSIS</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>driveinfo </b>[<b>-A</b>] [<b>-R </b><span class="s1">options-to-reset</span>] [<b>-a </b><span class="s1">byte-alignment</span>] [<b>-b</b>]</p>
+<p class="p2"><span class="Apple-converted-space">               </span>[<b>-c </b><span class="s1">column-list</span>] [<b>-defhimprs</b>] [<b>-t </b><span class="s1">maximum-entries</span>] [<b>-vx</b>]</p>
+<p class="p2"><span class="Apple-converted-space">               </span>[<b>-z </b><span class="s1">file-list</span>] [<b>--</b>] [<span class="s1">device</span>]</p>
+<p class="p1"><br></p>
+<p class="p2"><b>DESCRIPTION</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span>The <b>driveinfo </b>command gets detailed information about a specific drive.</p>
+<p class="p2"><span class="Apple-converted-space">     </span>The script parses property lists emitted by the diskutil(8) command to</p>
+<p class="p2"><span class="Apple-converted-space">     </span>compile the information. If the drive contains a GUID Partition Table</p>
+<p class="p2"><span class="Apple-converted-space">     </span>(GPT), then detailed information about each partition is also included in</p>
+<p class="p2"><span class="Apple-converted-space">     </span>a tabular form. This also allows free space on a drive, using a GPT, to</p>
+<p class="p2"><span class="Apple-converted-space">     </span>be identified.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span>The gpt(8) command can be used to view the actual stored GPT values in in</p>
+<p class="p2"><span class="Apple-converted-space">     </span>a tabular form. Starting with macOS, the gpt(8) command can no longer</p>
+<p class="p2"><span class="Apple-converted-space">     </span>read the GPT on an operating system boot drive, unless System Integrity</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Protection (SIP) is disabled. The <b>driveinfo </b>command does not require dis-</p>
+<p class="p2"><span class="Apple-converted-space">     </span>abling SIP and can produce the same basic tabular output as the gpt(8)</p>
+<p class="p2"><span class="Apple-converted-space">     </span>command.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span>The options are applied as read from left to right and are as follows:</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>-A <span class="Apple-converted-space">  </span></b>Reset to the default all options. This option is the same as enter-</p>
+<p class="p2"><span class="Apple-converted-space">          </span>ing the <b>-R </b><span class="s1">abcdefimrstx</span> option.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>-R </b><span class="s1">options-to-reset</span></p>
+<p class="p2"><span class="Apple-converted-space">          </span>Reset to the default value any options given as the argument.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>-a </b><span class="s1">byte-alignment</span></p>
+<p class="p2"><span class="Apple-converted-space">          </span>Set the byte alignment value used to determine if the "A" and "S"</p>
+<p class="p2"><span class="Apple-converted-space">          </span>error codes should be issued. The default is to never issue either</p>
+<p class="p2"><span class="Apple-converted-space">          </span>code. Normally, the byte alignment value should be a power of 2</p>
+<p class="p2"><span class="Apple-converted-space">          </span>greater than the logical sector size.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>-b <span class="Apple-converted-space">  </span></b>Display blocks instead of bytes. Each block is equal to the logical</p>
+<p class="p2"><span class="Apple-converted-space">          </span>sector size in bytes.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>-c </b><span class="s1">column-list</span></p>
+<p class="p2"><span class="Apple-converted-space">          </span>Specify which columns to display. Each character in the argument</p>
+<p class="p2"><span class="Apple-converted-space">          </span>represents a column type. The list of possible column types is given</p>
+<p class="p2"><span class="Apple-converted-space">          </span>in the COLUMNS section. The default is to display the "cstimn" col-</p>
+<p class="p2"><span class="Apple-converted-space">          </span>umn types.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>-d <span class="Apple-converted-space">  </span></b>Omit the header.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>-e <span class="Apple-converted-space">  </span></b>Omit the table.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>-f <span class="Apple-converted-space">  </span></b>Force use of color. Color sequences are normally disabled if the</p>
+<p class="p2"><span class="Apple-converted-space">          </span>output is not directed to a terminal. This can be overridden by set-</p>
+<p class="p2"><span class="Apple-converted-space">          </span>ting this flag.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>-h <span class="Apple-converted-space">  </span></b>Display this man page with overstriking suppressed, then quit. All</p>
+<p class="p2"><span class="Apple-converted-space">          </span>previous options are ignored.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>-i <span class="Apple-converted-space">  </span></b>Do not validate the source script. This option must occur before any</p>
+<p class="p2"><span class="Apple-converted-space">          </span>other options both on the command line and in the DRIVEINFO_OPTIONS</p>
+<p class="p2"><span class="Apple-converted-space">          </span>environment variable, otherwise this option will be ignored.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>-m <span class="Apple-converted-space">  </span></b>Omit thousands separator.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>-p <span class="Apple-converted-space">  </span></b>Pipe this man page to the less command, then quit. All previous</p>
+<p class="p2"><span class="Apple-converted-space">          </span>options are ignored. This allows the man page to be viewed interac-</p>
+<p class="p2"><span class="Apple-converted-space">          </span>tively.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>-r <span class="Apple-converted-space">  </span></b>Enable colorized output. ANSI escape codes are used to highlight</p>
+<p class="p2"><span class="Apple-converted-space">          </span>free space and entries with error codes. No attempt is made to</p>
+<p class="p2"><span class="Apple-converted-space">          </span>determine if the ANSI escape codes are compatible with the current</p>
+<p class="p2"><span class="Apple-converted-space">          </span>terminal.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>-s <span class="Apple-converted-space">  </span></b>Display execution times. This option is for diagnostic purposes.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>-t </b><span class="s1">maximum-entries</span></p>
+<p class="p2"><span class="Apple-converted-space">          </span>Set the maximum number of partition entries allowed in GPT. This</p>
+<p class="p2"><span class="Apple-converted-space">          </span>option should not be used unless the user knows the GPT was created</p>
+<p class="p2"><span class="Apple-converted-space">          </span>with more than the default of 128 possible entries.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>-v <span class="Apple-converted-space">  </span></b>Display the version, then quit.<span class="Apple-converted-space">  </span>All previous options are ignored.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>-x <span class="Apple-converted-space">  </span></b>Add a metric prefix to the values.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>-z </b><span class="s1">file-list</span></p>
+<p class="p2"><span class="Apple-converted-space">          </span>Install the files associated with this command, then quit. All pre-</p>
+<p class="p2"><span class="Apple-converted-space">          </span>vious options are ignored. Each character in the argument represents</p>
+<p class="p2"><span class="Apple-converted-space">          </span>a file type. The list of possible file types is given in the FILES</p>
+<p class="p2"><span class="Apple-converted-space">          </span>section.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>-- <span class="Apple-converted-space">  </span></b>Signals the end of options and disables further option processing.</p>
+<p class="p1"><br></p>
+<p class="p2"><b>DEVICES</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span>A device parameter can usually be any of the following:</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>• <span class="Apple-converted-space">  </span></b>The <b>disk identifier </b>(see below) of a drive with a GPT. Any entry of</p>
+<p class="p2"><span class="Apple-converted-space">         </span>the form of <span class="s1">diskU</span>, where U is zero or a positive decimal integer,</p>
+<p class="p2"><span class="Apple-converted-space">         </span>e.g.<span class="Apple-converted-space">  </span><span class="s1">disk0</span>.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>• <span class="Apple-converted-space">  </span></b>The device node entry containing the <b>disk identifier </b>of a drive with</p>
+<p class="p2"><span class="Apple-converted-space">         </span>a GPT.<span class="Apple-converted-space">  </span>Any entry of the form of <span class="s1">/dev/[r]diskU</span>, where U is zero or a</p>
+<p class="p2"><span class="Apple-converted-space">         </span>positive decimal integer, e.g.<span class="Apple-converted-space">  </span><span class="s1">/dev/disk0</span>.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span>Further information about devices can be found on the man page for</p>
+<p class="p2"><span class="Apple-converted-space">     </span>diskutil(8).</p>
+<p class="p1"><br></p>
+<p class="p2"><b>DISK IDENTIFIER</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span>The (BSD) <b>disk identifier </b>string variously identifies a physical or logi-</p>
+<p class="p2"><span class="Apple-converted-space">     </span>cal device unit, a session (if any) upon that device, a slice (partition)</p>
+<p class="p2"><span class="Apple-converted-space">     </span>upon that session (if any), or a virtual logical volume. In the context</p>
+<p class="p2"><span class="Apple-converted-space">     </span>of this command, a <b>disk identifier </b>may take the form of <span class="s1">diskU</span> or <span class="s1">diskUsS</span>,</p>
+<p class="p2"><span class="Apple-converted-space">     </span>where:</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>• <span class="Apple-converted-space">  </span></b><span class="s1">U</span> is the device unit represented by zero or a positive decimal inte-</p>
+<p class="p2"><span class="Apple-converted-space">         </span>ger (possibly multi-digit). It may refer to hardware (e.g. a hard</p>
+<p class="p2"><span class="Apple-converted-space">         </span>drive, optical drive, or memory card) or a virtual "drive" con-</p>
+<p class="p2"><span class="Apple-converted-space">         </span>structed by software (e.g. an AppleRAID Set, disk image, CoreStorage</p>
+<p class="p2"><span class="Apple-converted-space">         </span>LV, etc.).</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>• <span class="Apple-converted-space">  </span></b><span class="s1">S</span> is the slice (partition) represented by a positive decimal integer</p>
+<p class="p2"><span class="Apple-converted-space">         </span>(possibly multi-digit). Upon this partition, the raw data that under-</p>
+<p class="p2"><span class="Apple-converted-space">         </span>lies a user-visible file system is usually present, but it may also</p>
+<p class="p2"><span class="Apple-converted-space">         </span>contain specialized data for certain 3rd-party database programs, or</p>
+<p class="p2"><span class="Apple-converted-space">         </span>data required for the system software (e.g. EFI partitions, booter</p>
+<p class="p2"><span class="Apple-converted-space">         </span>partitions, APM partition map data, etc.), or, notably, it might con-</p>
+<p class="p2"><span class="Apple-converted-space">         </span>tain backing-store physical volumes for AppleRAID, CoreStorage, APFS,</p>
+<p class="p2"><span class="Apple-converted-space">         </span>or 3rd-party Storage Systems.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span>Further information about <b>disk identifiers </b>can be found on the man page</p>
+<p class="p2"><span class="Apple-converted-space">     </span>for diskutil(8).</p>
+<p class="p1"><br></p>
+<p class="p2"><b>COLUMNS</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span>Below is a list of information column types that can be output.<span class="Apple-converted-space">  </span>The let-</p>
+<p class="p2"><span class="Apple-converted-space">     </span>ters may appear as the argument to the c option.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span>b <span class="Apple-converted-space">  </span>Begin:<span class="Apple-converted-space">        </span>Base zero beginning offset.</p>
+<p class="p2"><span class="Apple-converted-space">     </span>c <span class="Apple-converted-space">  </span>Code: <span class="Apple-converted-space">        </span><b>Error codes </b>(see below).</p>
+<p class="p2"><span class="Apple-converted-space">     </span>e <span class="Apple-converted-space">  </span>End:<span class="Apple-converted-space">          </span>Base zero ending offset.</p>
+<p class="p2"><span class="Apple-converted-space">     </span>f <span class="Apple-converted-space">  </span>Format: <span class="Apple-converted-space">      </span>Known or last known file system (user visible) name.</p>
+<p class="p2"><span class="Apple-converted-space">     </span>i <span class="Apple-converted-space">  </span>Identifier: <span class="Apple-converted-space">  </span>Disk identifier of the partition (slice).</p>
+<p class="p2"><span class="Apple-converted-space">     </span>m <span class="Apple-converted-space">  </span>Mounted:<span class="Apple-converted-space">      </span>Either "Yes" for a mounted partition, otherwise "No".</p>
+<p class="p2"><span class="Apple-converted-space">     </span>n <span class="Apple-converted-space">  </span>Name: <span class="Apple-converted-space">        </span>Known or last known volume label.</p>
+<p class="p2"><span class="Apple-converted-space">     </span>p <span class="Apple-converted-space">  </span>Personality:<span class="Apple-converted-space">  </span>Known or last known file system personality name.</p>
+<p class="p2"><span class="Apple-converted-space">     </span>s <span class="Apple-converted-space">  </span>Size: <span class="Apple-converted-space">        </span>If Ending &lt; Beginning, then wrapping is assumed.</p>
+<p class="p2"><span class="Apple-converted-space">     </span>t <span class="Apple-converted-space">  </span>Type: <span class="Apple-converted-space">        </span><b>Entry type </b>(see below).</p>
+<p class="p1"><br></p>
+<p class="p2"><b>ENTRY TYPES</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span>Below is a list of <b>entry types </b>that reserve storage for partitioning</p>
+<p class="p2"><span class="Apple-converted-space">     </span>information.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span>PMBR<span class="Apple-converted-space">                </span>Protective Master Boot Record</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Pri GPT header<span class="Apple-converted-space">      </span>Primary GUID Partition Table header</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Pri GPT table <span class="Apple-converted-space">      </span>Primary GUID Partition Table array</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Sec GPT header<span class="Apple-converted-space">      </span>Secondary (Backup) GUID Partition Table header</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Sec GPT table <span class="Apple-converted-space">      </span>Secondary (Backup) GUID Partition Table array</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span>Below is a list of <b>entry types </b>and GUIDs for common partitions. This is</p>
+<p class="p2"><span class="Apple-converted-space">     </span>not a complete list.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span>Apple_APFS<span class="Apple-converted-space">                </span>7C3457EF-0000-11AA-AA11-00306543ECAC</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Apple_Boot<span class="Apple-converted-space">                </span>426F6F74-0000-11AA-AA11-00306543ECAC</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Apple_CoreStorage <span class="Apple-converted-space">        </span>53746F72-6167-11AA-AA11-00306543ECAC</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Apple_HFS <span class="Apple-converted-space">                </span>48465300-0000-11AA-AA11-00306543ECAC</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Bios Boot Partition <span class="Apple-converted-space">      </span>21686148-6449-6E6F-744E-656564454649</p>
+<p class="p2"><span class="Apple-converted-space">     </span>EFI <span class="Apple-converted-space">                      </span>C12A7328-F81F-11D2-BA4B-00A0C93EC93B</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Linux Filesystem<span class="Apple-converted-space">          </span>0FC63DAF-8483-4772-8E79-3D69D8477DE4</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Linux LVM <span class="Apple-converted-space">                </span>E6D6D379-F507-44C2-A23C-238F2A3DF928</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Linux Swap<span class="Apple-converted-space">                </span>0657FD6D-A4AB-43C4-84E5-0933C84B4F4F</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Microsoft Basic Data<span class="Apple-converted-space">      </span>EBD0A0A2-B9E5-4433-87C0-68B6B72699C7</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Microsoft Reserved<span class="Apple-converted-space">        </span>E3C9E316-0B5C-4DB8-817D-F92DF00215AE</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Windows Recovery<span class="Apple-converted-space">          </span>DE94BBA4-06D1-4D40-A16A-BFD50179D6AC</p>
+<p class="p1"><br></p>
+<p class="p2"><b>ERROR CODES</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span>These letters may appear in the "Code" column.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span>A <span class="Apple-converted-space">  </span>The "Begin" value is not a multiple of the byte-alignment value. This</p>
+<p class="p2"><span class="Apple-converted-space">         </span>check only performed on partition entries.</p>
+<p class="p2"><span class="Apple-converted-space">     </span>I <span class="Apple-converted-space">  </span>One or more values are invalid. A value is invalid, if at least one</p>
+<p class="p2"><span class="Apple-converted-space">         </span>of the three following conditions occurs. First, the "Begin" value is</p>
+<p class="p2"><span class="Apple-converted-space">         </span>greater than the "End" value. Second, the "Begin" block value is</p>
+<p class="p2"><span class="Apple-converted-space">         </span>greater than or equal to the number of sectors. Third, the "End"</p>
+<p class="p2"><span class="Apple-converted-space">         </span>block value is greater than or equal to the number of sectors.</p>
+<p class="p2"><span class="Apple-converted-space">     </span>O <span class="Apple-converted-space">  </span>The entry overlaps another entry. There is overlap, if at least one</p>
+<p class="p2"><span class="Apple-converted-space">         </span>of the two following conditions occurs. First, the "End" value is</p>
+<p class="p2"><span class="Apple-converted-space">         </span>greater than or equal to the "Begin" value of the next entry. Second,</p>
+<p class="p2"><span class="Apple-converted-space">         </span>the entry is not last and the "Begin" value greater than the "End"</p>
+<p class="p2"><span class="Apple-converted-space">         </span>value.</p>
+<p class="p2"><span class="Apple-converted-space">     </span>S <span class="Apple-converted-space">  </span>The "Size" value is not a multiple of the byte-alignment value. This</p>
+<p class="p2"><span class="Apple-converted-space">         </span>check only performed on partition entries.</p>
+<p class="p1"><br></p>
+<p class="p2"><b>COLORS</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span>Red <span class="Apple-converted-space">    </span>The entry contains one or more error codes.</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Green <span class="Apple-converted-space">  </span>The entry represents free space on the drive.</p>
+<p class="p1"><br></p>
+<p class="p2"><b>ENVIRONMENT</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span>The following environment variable affects the execution of <b>driveinfo</b>:</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span>DRIVEINFO_OPTIONS</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span>If the DRIVEINFO_OPTIONS variable exists in the environment, then the</p>
+<p class="p2"><span class="Apple-converted-space">     </span>options are read from this variable, before reading any additional</p>
+<p class="p2"><span class="Apple-converted-space">     </span>options from the command line.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span>DRIVEINFO_INCLUDE</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span>The DRIVEINFO_INCLUDE variable is only used during code development.</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Under normal usage, this variable is not accessed and can therefore be</p>
+<p class="p2"><span class="Apple-converted-space">     </span>ignored. If the DRIVEINFO_INCLUDE variable exists in the environment dur-</p>
+<p class="p2"><span class="Apple-converted-space">     </span>ing code development, then the directory stored in this variable may be</p>
+<p class="p2"><span class="Apple-converted-space">     </span>searched for include files.</p>
+<p class="p1"><br></p>
+<p class="p2"><b>FILES</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span>The letters given below may appear as the argument to the z option. This</p>
+<p class="p2"><span class="Apple-converted-space">     </span>option installs the <b>driveinfo </b>command into macOS. Note: Any existing</p>
+<p class="p2"><span class="Apple-converted-space">     </span>files will be replaced.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span>c <span class="Apple-converted-space">  </span>Copy the bash script to the <span class="s1">/usr/local/bin/driveinfo</span> file.</p>
+<p class="p2"><span class="Apple-converted-space">     </span>p <span class="Apple-converted-space">  </span>Write the man page to the <span class="s1">/usr/local/share/man/man8/driveinfo.8</span> file.</p>
+<p class="p1"><br></p>
+<p class="p2"><b>EXAMPLES</b></p>
+<p class="p2"><span class="Apple-converted-space">           </span>driveinfo disk0</p>
+<p class="p2"><span class="Apple-converted-space">     </span>If the DRIVEINFO_OPTIONS variable is defined, then the options are read</p>
+<p class="p2"><span class="Apple-converted-space">     </span>from this variable before displaying the information for disk0.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">           </span>driveinfo -A disk0</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Ignore the DRIVEINFO_OPTIONS variable and display the default information</p>
+<p class="p2"><span class="Apple-converted-space">     </span>for disk0.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">           </span>driveinfo -Abdmc bsit /dev/disk0</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Replacement for the "sudo gpt -r show /dev/disk0" command.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">           </span>driveinfo -a 4096 -r disk0</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Determine if the "A" and "S" error codes should be issued for partition</p>
+<p class="p2"><span class="Apple-converted-space">     </span>entries. The argument value of 4096 bytes is the alignment requirement</p>
+<p class="p2"><span class="Apple-converted-space">     </span>for proper operation of Apple_APFS, Apple_Boot, Apple_CoreStorage and</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Apple_HFS partitions.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">           </span>driveinfo -r disk0</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Use color to highlight free space and entries with error codes.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">           </span>driveinfo -R bd disk0</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Reset b and d options, if specified in the DRIVEINFO_OPTIONS variable.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">           </span>driveinfo -z cp</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Install this command. See the FILES section for more information.</p>
+<p class="p1"><br></p>
+<p class="p2"><b>DIAGNOSTICS</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span>Problems found with entries in (GPT) are flagged by letters appearing in</p>
+<p class="p2"><span class="Apple-converted-space">     </span>the "Code" column of the table.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span>The s option can be used to determine the execution times of the script.</p>
+<p class="p2"><span class="Apple-converted-space">     </span>This options verifies that a majority of the time is spent waiting for</p>
+<p class="p2"><span class="Apple-converted-space">     </span>the diskutil(8) command to return property lists.</p>
+<p class="p1"><br></p>
+<p class="p2"><b>COMPATIBILITY</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span>At the time of this writing, <b>driveinfo </b>found to be compatible with High</p>
+<p class="p2"><span class="Apple-converted-space">     </span>Sierra (macOS 10.13) and newer versions of macOS.</p>
+<p class="p1"><br></p>
+<p class="p2"><b>EXIT STATUS</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span>An value of 0 is returned to indicate success. A value of 2 is returned,</p>
+<p class="p2"><span class="Apple-converted-space">     </span>if the script determines a error condition. Otherwise, any exit code,</p>
+<p class="p2"><span class="Apple-converted-space">     </span>found in a diskutil(8) property list, will be the returned exit status of</p>
+<p class="p2"><span class="Apple-converted-space">     </span>the script.</p>
+<p class="p1"><br></p>
+<p class="p2"><b>VALIDATION</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span>Normally, a CRC32 validation is preformed on the source script. This can</p>
+<p class="p2"><span class="Apple-converted-space">     </span>be disabled with the i option. If the script is deliberately modified,</p>
+<p class="p2"><span class="Apple-converted-space">     </span>then the hexadecimal value given in the error message should be used to</p>
+<p class="p2"><span class="Apple-converted-space">     </span>replace the value at the end of the script. This value should be followed</p>
+<p class="p2"><span class="Apple-converted-space">     </span>by a newline.</p>
+<p class="p1"><br></p>
+<p class="p2"><b>SEE ALSO</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span>diskutil(8), gpt(8)</p>
+<p class="p1"><br></p>
+<p class="p2"><b>HISTORY</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span>The <b>driveinfo </b>utility is not part of macOS. The first downloadable ver-</p>
+<p class="p2"><span class="Apple-converted-space">     </span>sion appeared in December of 2018.</p>
+<p class="p1"><br></p>
+<p class="p2"><b>VERSION</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span>This documentation is current for version 1.0.3 of <b>driveinfo</b>.</p>
+<p class="p1"><br></p>
+<p class="p2"><b>BUGS</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span>The tabular information is only produced for drives with a GPT.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span>The default maximum number of partition entries allowed in GPT is assumed</p>
+<p class="p2"><span class="Apple-converted-space">     </span>to be 128. While this is a fairly safe assumption, if the actual value is</p>
+<p class="p2"><span class="Apple-converted-space">     </span>different, then this utility will not know unless set by the t option.</p>
+<p class="p1"><br></p>
+<p class="p2"><b>AUTHOR</b></p>
+<p class="p2"><span class="Apple-converted-space">     </span><b>driveinfo </b>was written by David M. Anderson.</p>
+<p class="p1"><br></p>
+<p class="p2"><span class="Apple-converted-space">     </span>Support and development are available at</p>
+<p class="p2"><span class="Apple-converted-space">     </span>https://sourceforge.net/projects/driveinfo/</p>
+<p class="p1"><br></p>
+<p class="p2">macOS <span class="Apple-converted-space">                          </span>January 4, 2019<span class="Apple-converted-space">                          </span>macOS</p>
+</body>
+</html>
