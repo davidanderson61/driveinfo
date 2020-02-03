@@ -2,7 +2,7 @@
 #
 # math - Provide math functions for large integers.
 #
-# Copyright (c) 2018-2019 David M. Anderson
+# Copyright (c) 2018-2020 David M. Anderson
 #
 # Distributed under the terms of the GNU General Public
 # License (GPL) version 3 (GPLv3) or (at your option) any later version.
@@ -539,4 +539,4 @@ SetBlockSize() {
 }
 
 ###################################################################
-#f007b3db
+#c02589cf

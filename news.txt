@@ -1,3 +1,10 @@
+1.0.4 (2/1/2020):
+-------------------
+
+- Added support for nested array and dict elements in diskutil plist output.
+
+- Removed the whatis file before creating a new one.
+
 1.0.3 (1/4/2019):
 -------------------
 

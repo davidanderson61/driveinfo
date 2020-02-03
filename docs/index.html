@@ -7,7 +7,7 @@
 <body>
     <h6>The macOS driveinfo Command
     </h6>
-    <p>Last Web page update: 1/4/2019, referencing driveinfo version 1.0.3</p>
+    <p>Last Web page update: 2/1/2020, referencing driveinfo version 1.0.4</p>
     <p>
         The <a href="driveinfo.html">driveinfo man page</a> provides most of the information
         needed to use this command. There also is a
@@ -29,12 +29,12 @@
         <span class="code">~/Downloads</span> folder,
         driveinfo can be run by typing the following command along with the desired parameters.
     </p>
-    <h5>~/Downloads/driveinfo-1.0.3/driveinfo</h5>
+    <h5>~/Downloads/driveinfo-1.0.4/driveinfo</h5>
     <p>
         If you wish to install, then enter the following. This will install both the command
         and the corresponding man page.
     </p>
-    <h5>sudo ~/Downloads/driveinfo-1.0.3/driveinfo -zcp</h5>
+    <h5>sudo ~/Downloads/driveinfo-1.0.4/driveinfo -zcp</h5>
     <p>After installing, the follow files should have been created or verified.</p>
     <h5>/usr/local/bin/driveinfo<br />
         /usr/local/share/man/man8/driveinfo.8<br />
@@ -42,6 +42,7 @@
     <p>The following commands can be used to uninstall driveinfo.</p>
     <h5>sudo rm /usr/local/bin/driveinfo<br />
         sudo rm /usr/local/share/man/man8/driveinfo.8<br />
+        sudo rm -f /usr/local/share/man/whatis<br />
         sudo /usr/libexec/makewhatis /usr/local/share/man
     </h5>
     <p>

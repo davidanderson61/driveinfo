@@ -2,7 +2,7 @@
 #
 # help - Gets manual for driveinfo.
 #
-# Copyright (c) 2018-2019 David M. Anderson
+# Copyright (c) 2018-2020 David M. Anderson
 #
 # Distributed under the terms of the GNU General Public
 # License (GPL) version 3 (GPLv3) or (at your option) any later version.
@@ -31,7 +31,7 @@ HelpCommand() {
 .\"
 .\" $application.8 - This is the man page for $application.
 .\"
-.\" Copyright (c) 2018-2019 David M. Anderson
+.\" Copyright (c) 2018-2020 David M. Anderson
 .\"
 .\" Distributed under the terms of the GNU General Public
 .\" License (GPL) version 3 (GPLv3) or (at your option) any later version.
@@ -52,7 +52,7 @@ HelpCommand() {
 .\"    You should have received a copy of the GNU General Public License
 .\"    along with $application.  If not, see <https://www.gnu.org/licenses/>.
 .\"
-.Dd January 4, 2019
+.Dd February 1, 2020
 .Os "macOS"
 .Dt $APPLICATION 8
 .Sh NAME
@@ -460,4 +460,4 @@ END_OF_HELP_TEXT
 }
 #        1         2         3         4         5         6         7         8
 #2345678901234567890123456789012345678901234567890123456789012345678901234567890
-#2127d933
+#3cb2db0f

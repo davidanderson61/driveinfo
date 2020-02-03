@@ -2,7 +2,7 @@
 #
 # driveinfo - Gets detailed information about a drive.
 #
-# Copyright (c) 2018-2019 David M. Anderson
+# Copyright (c) 2018-2020 David M. Anderson
 #
 # Distributed under the terms of the GNU General Public
 # License (GPL) version 3 (GPLv3) or (at your option) any later version.
@@ -32,7 +32,7 @@ fi
 set -u
 
 Application() { echo "driveinfo"; }
-Version() { echo "1.0.3"; }
+Version() { echo "1.0.4"; }
 ExitOK() { exit "0"; }
 ExitFatal() { exit "${1:-2}"; }
 Name() {
@@ -326,9 +326,12 @@ Install()
         Clean "$manN/$page" || fail="1"
         break;
     done
-    if [[ doPage -ne 0 ]] && ! /usr/libexec/makewhatis "$man" 2>/dev/null; then
-        fail="1"
-        echo "$(Name): $man/whatis: A error occurred while updating the whatis database." >&2
+    if [[ doPage -ne 0 ]]; then
+        rm -f "$man/whatis"
+        if ! /usr/libexec/makewhatis "$man" 2>/dev/null; then
+            fail="1"
+            echo "$(Name): $man/whatis: A error occurred while updating the whatis database." >&2
+        fi
     fi
 
     if [[ fail -ne 0 ]]; then
@@ -435,7 +438,15 @@ ReadValues() {
         if [[ i -eq 0 && $line == ${ErrorKey[0]} ]]; then
             CopyKeys "Error"
         fi
-        if ! "read" "-r" "result"; then break; fi
+
+        while :; do
+            "read" "-r" "result" || break 2
+            case "$result" in
+            "<array>"|"<dict>") j=j+1;;
+            "</array>"|"</dict>") j=j-1
+            esac
+            [[ j -gt 0 ]] || break
+        done
 
         while [[ $line > ${Key[i]} ]]; do
             if [[ Required[i] -ne 0 || ++i -eq Keys ]]; then
@@ -1106,4 +1117,4 @@ DriveInfo "$@"
 # ditto --hfsCompression [src] [dst]
 # afscexpand can be used to decompress files in place
 #
-#fe70236d
+#1a903de9
